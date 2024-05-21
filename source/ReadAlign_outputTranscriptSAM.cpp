@@ -24,7 +24,7 @@ uint ReadAlign::outputTranscriptSAM(Transcript const &trOut, uint nTrOut, uint i
                     };
                 };
 
-                if (readFilter=='Y') 
+                if (readFilter=='Y')
                     samFLAG|=0x200; //not passing quality control
 
                 if (mateMap[1-imate] && !trOut.primaryFlag && P.outSAMunmapped.keepPairs) {//mapped mate is not primary, keep unmapped mate for each pair, hence need to mark some as not primary
@@ -320,16 +320,37 @@ uint ReadAlign::outputTranscriptSAM(Transcript const &trOut, uint nTrOut, uint i
                     if (mapGen.pGe.transform.type==2) {
                         *outStream<< "\tha:i:" <<trOut.haploType;
                     };
-                    break;                    
-                    
+                    break;
+                case ATTR_R2:
+                    if (P.readTwoIsBarcode) {
+                        *outStream<< "\tR2:Z:" <<Read0[1];
+                    };
+                    break;
+                case ATTR_CR:
+                    if (P.readTwoIsBarcode && P.cbS >= 0 && P.cbL > 0) {
+                        if ((int32) readLengthOriginal[1] < P.cbS+P.cbL) {
+                            break;
+                        }
+                        *outStream << "\tCR:Z:";
+                        outStream->write(Read0[1]+P.cbS, P.cbL);
+                    };
+                    break;
+                case ATTR_UR:
+                    if (P.readTwoIsBarcode && P.ubS >= 0 && P.ubL > 0) {
+                        if ((int32) readLengthOriginal[1] < P.ubS+P.ubL) {
+                            break;
+                        }
+                        *outStream<< "\tUR:Z:";
+                        outStream->write(Read0[1]+P.ubS, P.ubL);
+                    };
+                    break;
+
                 //do nothing - this attributes only work for BAM output
                 case ATTR_ch:
-                case ATTR_CR:
-                case ATTR_CY:
-                case ATTR_UR:
-                case ATTR_UY:
                 case ATTR_CB:
+                case ATTR_CY:
                 case ATTR_UB:
+                case ATTR_UY:
                 case ATTR_sM:
                 case ATTR_sS:
                 case ATTR_sQ:
@@ -338,7 +359,7 @@ uint ReadAlign::outputTranscriptSAM(Transcript const &trOut, uint nTrOut, uint i
                 case ATTR_vA:
                 case ATTR_vW:
                 case ATTR_GX:
-                case ATTR_GN:                    
+                case ATTR_GN:
                     break;
                 default:
                     ostringstream errOut;

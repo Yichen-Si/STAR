@@ -53,13 +53,13 @@ genomeChainFiles            -
 
 genomeFileSizes             0
     uint(s)>0: genome files exact sizes in bytes. Typically, this should not be defined by the user.
-    
+
 genomeTransformOutput       None
     string(s):              which output to transform back to original genome
                             SAM     ... SAM/BAM alignments
                             SJ      ... splice junctions (SJ.out.tab)
                             Quant   ... quantifications (from --quantMode option)
-                            None    ... no transformation of the output        
+                            None    ... no transformation of the output
 
 genomeChrSetMitochondrial   chrM M MT
     string(s):              names of the mitochondrial chromosomes. Presently only used for STARsolo statistics output/
@@ -76,7 +76,7 @@ genomeSAsparseD             1
 
 genomeSuffixLengthMax       -1
     int: maximum length of the suffixes, has to be longer than read length. -1 = infinite.
-    
+
 genomeTransformType         None
     string: type of genome transformation
                             None       ... no transformation
@@ -87,7 +87,7 @@ genomeTransformVCF          -
     string: path to VCF file for genome transformation
 
 
-    
+
 #####UnderDevelopment_begin : not supported - do not use
 genomeType                  Full
     string: type of genome to generate
@@ -99,7 +99,7 @@ genomeType                  Full
 # DEPRECATED: please use --genomeTransformVCF and --genomeTransformType options instead.
 #genomeConsensusFile         -
 #    string: VCF file with consensus SNPs (i.e. alternative allele is the major (AF>0.5) allele)
-# DEPRECATED 
+# DEPRECATED
 
 
 
@@ -153,7 +153,7 @@ readFilesType               Fastx
                             Fastx       ... FASTA or FASTQ
                             SAM SE      ... SAM or BAM single-end reads; for BAM use --readFilesCommand samtools view
                             SAM PE      ... SAM or BAM paired-end reads; for BAM use --readFilesCommand samtools view
-                            
+
 readFilesSAMattrKeep        All
     string(s): for --readFilesType SAM SE/PE, which SAM tags to keep in the output BAM, e.g.: --readFilesSAMtagsKeep RG PL
                             All     ... keep all tags
@@ -190,6 +190,21 @@ readNameSeparator           /
 readQualityScoreBase        33
     int>=0: number to be subtracted from the ASCII code to get Phred quality score
 
+readTwoIsBarcode            0
+    bool: if the second fastx file contains only barcode
+
+CBstart                 -1
+    int: barcode start base (only used together with --readTwoIsBarcode 1)
+
+CBlen                   0
+    int>=0: barcode length (only used together with --readTwoIsBarcode 1)
+
+UBstart                -1
+    int: UMI start base (only used together with --readTwoIsBarcode 1)
+
+UBlen                  0 (only used together with --readTwoIsBarcode 1)
+    int>=0: UMI length
+
 ### Read Clipping
 
 clipAdapterType             Hamming
@@ -197,7 +212,7 @@ clipAdapterType             Hamming
                             Hamming ... adapter clipping based on Hamming distance, with the number of mismatches controlled by --clip5pAdapterMMp
                             CellRanger4 ... 5p and 3p adapter clipping similar to CellRanger4. Utilizes Opal package by Martin Šošić: https://github.com/Martinsos/opal
                             None ... no adapter clipping, all other clip* parameters are disregarded
-                            
+
 clip3pNbases                 0
     int(s): number(s) of bases to clip from 3p of each mate. If one value is given, it will be assumed the same for both mates.
 
@@ -214,7 +229,7 @@ clip3pAfterAdapterNbases    0
 clip5pNbases                 0
     int(s): number(s) of bases to clip from 5p of each mate. If one value is given, it will be assumed the same for both mates.
 
-#####UnderDevelopment_begin : not supported - do not use   
+#####UnderDevelopment_begin : not supported - do not use
 clip5pAdapterSeq            -
     string(s): adapter sequences to clip from 5p of each mate, separated by space.
 
@@ -311,7 +326,7 @@ outSAMattributes                Standard
                                 ***Presets:
                                 None        ... no attributes
                                 Standard    ... NH HI AS nM
-                                All         ... NH HI AS nM NM MD jM jI MC ch                                                                    
+                                All         ... NH HI AS nM NM MD jM jI MC ch
                                 ***Alignment:
                                 NH          ... number of loci the reads maps to: =1 for unique mappers, >1 for multimappers. Standard SAM tag.
                                 HI          ... multiple alignment index, starts with --outSAMattrIHstart (=1 by default). Standard SAM tag.
@@ -329,7 +344,7 @@ outSAMattributes                Standard
                                 vA          ... variant allele
                                 vG          ... genomic coordinate of the variant overlapped by the read.
                                 vW          ... 1 - alignment passes WASP filtering; 2,3,4,5,6,7 - alignment does not pass WASP filtering. Requires --waspOutputMode SAMtag.
-                                ha          ... haplotype (1/2) when mapping to the diploid genome. Requires genome generated with --genomeTransformType Diploid .                               
+                                ha          ... haplotype (1/2) when mapping to the diploid genome. Requires genome generated with --genomeTransformType Diploid .
                                 ***STARsolo:
                                 CR CY UR UY ... sequences and quality scores of cell barcodes and UMIs for the solo* demultiplexing.
                                 GX GN       ... gene ID and gene name for unique-gene reads.
@@ -836,13 +851,13 @@ soloCBmatchWLtype           1MM_multi
                                                                 Allowed CBs have to have at least one read with exact match. This option matches best with CellRanger 2.2.0
                             1MM_multi_pseudocounts          ... same as 1MM_Multi, but pseudocounts of 1 are added to all whitelist barcodes.
                             1MM_multi_Nbase_pseudocounts    ... same as 1MM_multi_pseudocounts, multimatching to WL is allowed for CBs with N-bases. This option matches best with CellRanger >= 3.0.0
-                            EditDist_2                    ... allow up to edit distance of 3 fpr each of the barcodes. May include one deletion + one insertion. Only works with --soloType CB_UMI_Complex. Matches to multiple passlist barcdoes are not allowed. Similar to ParseBio Split-seq pipeline. 
+                            EditDist_2                    ... allow up to edit distance of 3 fpr each of the barcodes. May include one deletion + one insertion. Only works with --soloType CB_UMI_Complex. Matches to multiple passlist barcdoes are not allowed. Similar to ParseBio Split-seq pipeline.
 
 soloInputSAMattrBarcodeSeq  -
     string(s):              when inputting reads from a SAM file (--readsFileType SAM SE/PE), these SAM attributes mark the barcode sequence (in proper order).
                             For instance, for 10X CellRanger or STARsolo BAMs, use --soloInputSAMattrBarcodeSeq CR UR .
-                            This parameter is required when running STARsolo with input from SAM. 
-    
+                            This parameter is required when running STARsolo with input from SAM.
+
 soloInputSAMattrBarcodeQual  -
     string(s):              when inputting reads from a SAM file (--readsFileType SAM SE/PE), these SAM attributes mark the barcode qualities (in proper order).
                             For instance, for 10X CellRanger or STARsolo BAMs, use --soloInputSAMattrBarcodeQual CY UY .
@@ -867,7 +882,7 @@ soloFeatures                Gene
 #####UnderDevelopment_end
 
 soloMultiMappers            Unique
-    string(s): counting method for reads mapping to multiple genes           
+    string(s): counting method for reads mapping to multiple genes
                             Unique     ... count only reads that map to unique genes
                             Uniform    ... uniformly distribute multi-genic UMIs to all genes
                             Rescue     ... distribute UMIs proportionally to unique+uniform counts (~ first iteration of EM)
@@ -890,7 +905,7 @@ soloUMIfiltering            -
                             MultiGeneUMI_All   ... basic + remove all UMIs that map to more than one gene.
                             MultiGeneUMI_CR    ... basic + remove lower-count UMIs that map to more than one gene, matching CellRanger > 3.0.0 .
                                                    Only works with --soloUMIdedup 1MM_CR
-                                                
+
 soloOutFileNames            Solo.out/          features.tsv barcodes.tsv        matrix.mtx
     string(s):              file names for STARsolo output:
                             file_name_prefix   gene_names   barcode_sequences   cell_feature_count_matrix
@@ -899,11 +914,11 @@ soloCellFilter              CellRanger2.2 3000 0.99 10
     string(s):              cell filtering type and parameters
                             None            ... do not output filtered cells
                             TopCells        ... only report top cells by UMI count, followed by the exact number of cells
-                            CellRanger2.2   ... simple filtering of CellRanger 2.2. 
+                            CellRanger2.2   ... simple filtering of CellRanger 2.2.
                                                 Can be followed by numbers: number of expected cells, robust maximum percentile for UMI count, maximum to minimum ratio for UMI count
                                                 The harcoded values are from CellRanger: nExpectedCells=3000;  maxPercentile=0.99;  maxMinRatio=10
                             EmptyDrops_CR   ... EmptyDrops filtering in CellRanger flavor. Please cite the original EmptyDrops paper: A.T.L Lun et al, Genome Biology, 20, 63 (2019): https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1662-y
-                                                Can be followed by 10 numeric parameters:  nExpectedCells   maxPercentile   maxMinRatio   indMin   indMax   umiMin   umiMinFracMedian   candMaxN   FDR   simN 
+                                                Can be followed by 10 numeric parameters:  nExpectedCells   maxPercentile   maxMinRatio   indMin   indMax   umiMin   umiMinFracMedian   candMaxN   FDR   simN
                                                 The harcoded values are from CellRanger:             3000            0.99            10    45000    90000      500               0.01      20000  0.01  10000
 
 soloOutFormatFeaturesGeneField3    "Gene Expression"

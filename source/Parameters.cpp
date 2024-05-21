@@ -36,7 +36,7 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoScalar <int> (-1, -1, "runRNGseed", &runRNGseed));
 
     //genome
-    parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "genomeType", &pGe.gTypeString));    
+    parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "genomeType", &pGe.gTypeString));
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "genomeDir", &pGe.gDir));
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "genomeLoad", &pGe.gLoad));
     parArray.push_back(new ParameterInfoVector <string> (-1, -1, "genomeFastaFiles", &pGe.gFastaFiles));
@@ -64,6 +64,12 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoScalar <uint32> (-1, -1, "readQualityScoreBase", &readQualityScoreBase));
     parArray.push_back(new ParameterInfoVector <string> (-1, -1, "readFilesManifest", &readFilesManifest));
     parArray.push_back(new ParameterInfoVector <string> (-1, -1, "readFilesSAMattrKeep", &readFiles.samAttrKeepIn));
+
+    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "readTwoIsBarcode", &readTwoIsBarcode));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "CBstart", &cbS));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBstart", &ubS));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "CBlen", &cbL));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBlen", &ubL));
 
     //parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "readStrand", &pReads.strandString));
 
@@ -120,7 +126,7 @@ Parameters::Parameters() {//initalize parameters info
 
     //outSJ
     parArray.push_back(new ParameterInfoVector <string>     (-1, -1, "outSJtype", &outSJ.type));
-    
+
     //output SJ filtering
     parArray.push_back(new ParameterInfoScalar <string>  (-1, -1, "outSJfilterReads", &outSJfilterReads));
     parArray.push_back(new ParameterInfoVector <int32>   (-1, -1, "outSJfilterCountUniqueMin", &outSJfilterCountUniqueMin));
@@ -196,7 +202,7 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoScalar <uint>       (-1, -1, "seedMultimapNmax", &seedMultimapNmax));
     parArray.push_back(new ParameterInfoScalar <uint>       (-1, -1, "seedSplitMin", &seedSplitMin));
     parArray.push_back(new ParameterInfoScalar <uint64>       (-1, -1, "seedMapMin", &seedMapMin));
-    
+
     parArray.push_back(new ParameterInfoScalar <uint>       (-1, -1, "alignIntronMin", &alignIntronMin));
     parArray.push_back(new ParameterInfoScalar <uint>       (-1, -1, "alignIntronMax", &alignIntronMax));
     parArray.push_back(new ParameterInfoScalar <uint>       (-1, -1, "alignMatesGapMax", &alignMatesGapMax));
@@ -240,7 +246,7 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoVector <string> (-1, -1, "sjdbFileChrStartEnd", &pGe.sjdbFileChrStartEnd));
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "sjdbGTFfile", &pGe.sjdbGTFfile));
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "sjdbGTFchrPrefix", &pGe.sjdbGTFchrPrefix));
-    
+
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "sjdbGTFfeatureExon", &pGe.sjdbGTFfeatureExon));
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "sjdbGTFtagExonParentTranscript", &pGe.sjdbGTFtagExonParentTranscript));
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "sjdbGTFtagExonParentGene", &pGe.sjdbGTFtagExonParentGene));
@@ -288,12 +294,12 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoScalar <string>   (-1, -1, "soloUMIposition",&pSolo.umiPositionStr));
     parArray.push_back(new ParameterInfoVector <string>   (-1, -1, "soloCellFilter",&pSolo.cellFilter.type));
     parArray.push_back(new ParameterInfoVector <string>   (-1, -1, "soloUMIfiltering",&pSolo.umiFiltering.type));
-    
+
     parArray.push_back(new ParameterInfoVector <string>   (-1, -1, "soloMultiMappers", &pSolo.multiMap.typesIn));
-    
+
     parArray.push_back(new ParameterInfoScalar <string>   (-1, -1, "soloClusterCBfile",&pSolo.clusterCBfile));
     parArray.push_back(new ParameterInfoScalar <string>   (-1, -1, "soloOutFormatFeaturesGeneField3",&pSolo.outFormat.featuresGeneField3));
-    
+
     parArray.push_back(new ParameterInfoVector <string>   (-1, -1, "soloInputSAMattrBarcodeSeq",&pSolo.samAtrrBarcodeSeq));
     parArray.push_back(new ParameterInfoVector <string>   (-1, -1, "soloInputSAMattrBarcodeQual",&pSolo.samAtrrBarcodeQual));
     parArray.push_back(new ParameterInfoScalar <string>   (-1, -1, "soloCellReadStats",&pSolo.readStats.type));
@@ -308,7 +314,7 @@ Parameters::Parameters() {//initalize parameters info
 
 
 void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters: default, from files, from command line
-    
+
     //hard-coded parameters
     runRestart.type=0;
 
@@ -403,7 +409,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
         };
     };
     */
-    
+
     inOut->logMain <<"##### Command Line:\n"<<commandLine <<endl ;
 
     inOut->logMain << "##### Initial USER parameters from Command Line:\n";
@@ -475,7 +481,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
 
 ////////////////////////////////////////////////////// Calculate and check parameters
     iReadAll=0;
-    
+
     pGe.initialize(this);
 
     //directory permissions TODO: this needs to be done before outPrefixFileName is created
@@ -850,7 +856,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
             errOut <<"SOLUTION: specify outSAMmapqUnique within the range of 0 to 255\n";
             exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
     };
-        
+
     //variation
     var.yes=false;
     if (var.vcfFile!="-") {
@@ -886,7 +892,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
         errOut <<"SOLUTION: re-run STAR with --waspOutputMode ... and --outSAMtype BAM ... \n";
         exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
     };
-    
+
     //quantification parameters
     quant.yes=false;
     quant.geCount.yes=false;
@@ -894,7 +900,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     quant.trSAM.bamYes=false;
     quant.trSAM.indel=false;
     quant.trSAM.softClip=false;
-    quant.trSAM.singleEnd=false; 
+    quant.trSAM.singleEnd=false;
     if (quant.mode.at(0) != "-") {
         quant.yes=true;
         for (uint32 ii=0; ii<quant.mode.size(); ii++) {
@@ -939,7 +945,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     //these may be set in STARsolo or in SAM attributes
     quant.geneFull.yes=false;
     quant.gene.yes=false;
-    
+
 
     outSAMstrandField.type=0; //none
     if (outSAMstrandField.in=="None") {
@@ -952,13 +958,13 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
         errOut << "SOLUTION: use one of the allowed values of --outSAMstrandField : None or intronMotif \n";
         exitWithError(errOut.str(),std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
     };
-    
+
     //SAM attributes
     samAttributes();
-    
+
     //solo
     pSolo.initialize(this);
-    
+
     //clipping
     pClip.initialize(this);
 
@@ -1135,7 +1141,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     //////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////// these parameters do not depend on other parameters
     /////////////////////////////////////////////////////////////////////////////////
-    
+
     ////////////////////////////////////////////////////////// limitIObufferSize
     /* old before 2.7.9
     // in/out buffers
@@ -1151,17 +1157,17 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     chunkOutBAMsizeBytes= (uint) int((1.0/BUFFER_InSizeFraction-1.0)*chunkInSizeBytesArray*2.0);
     chunkInSizeBytes=chunkInSizeBytesArray-2*(DEF_readSeqLengthMax+1)-2*DEF_readNameLengthMax;//to prevent overflow
     */
-    
-    if (limitIObufferSize.size() != 2) 
+
+    if (limitIObufferSize.size() != 2)
         exitWithError("EXITING because of FATAL input ERROR: --limitIObufferSize requires 2 numbers since 2.7.9a.\n"
                       "SOLUTION: specify 2 numbers in --limitIObufferSize : size of input and output buffers in bytes.\n"
                         , std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
-    
+
     chunkInSizeBytesArray = limitIObufferSize[0]/readNends; //array size
     chunkInSizeBytes = chunkInSizeBytesArray-2*(DEF_readSeqLengthMax+1)-2*DEF_readNameLengthMax; //to prevent overflow - array is bigger to allow loading one read
     chunkOutBAMsizeBytes = limitIObufferSize[1];
-    
-    
+
+
     ///////////////////////////////////////////////////////// outSJ
     if (outSJ.type[0] == "None") {
         outSJ.yes = false;
@@ -1180,15 +1186,15 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
             exitWithError("EXITING because of FATAL input ERROR: --outFilterType BySJout requires --outSJtype Standard\n"
                       "SOLUTION: --outFilterType Normal    OR   --outFilterType BySJout --outSJtype Standard\n"
                         , std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
-            
+
         outFilterBySJoutStage=1;
     } else {
         ostringstream errOut;
         errOut <<"EXITING because of FATAL input ERROR: unknown value of parameter outFilterType: " << outFilterType <<"\n";
         errOut <<"SOLUTION: specify one of the allowed values: Normal | BySJout\n";
         exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
-    };    
-    
+    };
+
     ////////////////////////////////////////////////
     inOut->logMain << "Finished loading and checking parameters\n" <<flush;
 };

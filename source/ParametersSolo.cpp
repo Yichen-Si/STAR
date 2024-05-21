@@ -18,35 +18,39 @@ void ParametersSolo::initialize(Parameters *pPin)
         umiDedup.initialize(this);
         return;
     };
-    
+
     //constants - may turn into parameters in the future
     redistrReadsNfiles = 3*pP->runThreadN;
-    
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////--soloType
-    barcodeStart=barcodeEnd=0; //this means that the entire barcodeRead is considered barcode. Will change it for simple barcodes.    
+    barcodeStart=barcodeEnd=0; //this means that the entire barcodeRead is considered barcode. Will change it for simple barcodes.
     yes = true;
     if (typeStr=="None" || typeStr=="SmartSeq") {//solo SAM attributes not allowed
-            
-        if (   pP->outSAMattrPresent.CR  || pP->outSAMattrPresent.CY  || pP->outSAMattrPresent.UR 
-            || pP->outSAMattrPresent.UY  || pP->outSAMattrPresent.CB  || pP->outSAMattrPresent.UB
-            || pP->outSAMattrPresent.sS  || pP->outSAMattrPresent.sQ  || pP->outSAMattrPresent.sM
-            || pP->outSAMattrPresent.sF
-           ) {
+
+        // if (   pP->outSAMattrPresent.CR  || pP->outSAMattrPresent.CY  || pP->outSAMattrPresent.UR
+        //     || pP->outSAMattrPresent.UY  || pP->outSAMattrPresent.CB  || pP->outSAMattrPresent.UB
+        //     || pP->outSAMattrPresent.sS  || pP->outSAMattrPresent.sQ  || pP->outSAMattrPresent.sM
+        //     || pP->outSAMattrPresent.sF
+        //    )
+        if (   pP->outSAMattrPresent.CY  || pP->outSAMattrPresent.UY  ||
+               pP->outSAMattrPresent.sS  || pP->outSAMattrPresent.sQ  || pP->outSAMattrPresent.sM  || pP->outSAMattrPresent.sF
+           )
+        {
             ostringstream errOut;
             errOut <<"EXITING because of FATAL INPUT ERROR: --outSAMattributes contains CR/CY/UR/UY/CB/UB tags which are not allowed for --soloType " << typeStr <<'\n';
             errOut <<"SOLUTION: re-run STAR without these attribures\n";
             exitWithError(errOut.str(), std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
-        };        
+        };
     };
-    
+
     if (typeStr=="None") {
         type = SoloTypes::None;
         yes = false;
-        samAttrYes = false;     
-        return;        
+        samAttrYes = false;
+        return;
     } else if (typeStr=="CB_UMI_Simple" || typeStr=="Droplet") {
-        type=SoloTypes::CB_UMI_Simple;        
+        type=SoloTypes::CB_UMI_Simple;
         if (umiL > 16) {
             ostringstream errOut;
             errOut << "EXITING because of fatal PARAMETERS error: UMI length is too long: --soloUMIlen="<<umiL<<"\n";
@@ -59,14 +63,14 @@ void ParametersSolo::initialize(Parameters *pPin)
             errOut << "SOLUTION: CB length cannot be longer than 31";
             exitWithError(errOut.str(),std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
         };
-        
+
         cbumiL=cbL+umiL;
         if (bL==1)
             bL=cbumiL;
-        
+
         barcodeStart=min(cbS,umiS)-1;
         barcodeEnd=max(cbS+cbL,umiS+umiL)-2;
-        
+
     } else if (typeStr=="CB_UMI_Complex") {
         type=SoloTypes::CB_UMI_Complex;
         bL=0;//no fixed length for barcode sequence
@@ -80,10 +84,10 @@ void ParametersSolo::initialize(Parameters *pPin)
 
         barcodeStart=min(cbS,umiS)-1;
         barcodeEnd=max(cbS+cbL,umiS+umiL)-2;
-        
+
     } else if (typeStr=="SmartSeq") {
-        type=SoloTypes::SmartSeq;     
-       
+        type=SoloTypes::SmartSeq;
+
     } else  {
         ostringstream errOut;
         errOut << "EXITING because of fatal PARAMETERS error: unrecognized option in --soloType="<<typeStr<<"\n";
@@ -105,7 +109,7 @@ void ParametersSolo::initialize(Parameters *pPin)
         };
         CBtype.type = 2;
         CBtype.strMtx = new std::mutex;
-        CBtype.strMap.reserve(100000);        
+        CBtype.strMap.reserve(100000);
     } else  {
         ostringstream errOut;
         errOut << "EXITING because of fatal PARAMETERS error: unrecognized option in --soloCBtype="<< CBtype.typeString <<"\n";
@@ -114,9 +118,9 @@ void ParametersSolo::initialize(Parameters *pPin)
     };
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////input read files
-    barcodeRead=-1; 
+    barcodeRead=-1;
     barcodeReadSeparate=false;
-    
+
     if (pP->readFilesTypeN != 10) {//input from FASTQ
         if (type==SoloTypes::SmartSeq) {//no barcode read
             //TODO: a lot of parameters should not be defined for SmartSeq option - check it here
@@ -128,7 +132,7 @@ void ParametersSolo::initialize(Parameters *pPin)
                                   ,std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
                 };
                 pP->readNmates = pP->readNends-1; //true mates, excluding barcode read
-                barcodeRead = pP->readNends-1;//the barcode read is always the last one 
+                barcodeRead = pP->readNends-1;//the barcode read is always the last one
             } else if (barcodeReadIn > pP->readNends) {
                 exitWithError("EXITING because of fatal PARAMETERS error: --soloBarcodeMate " +to_string(barcodeReadIn)+ "is larger than number of mates " + to_string(pP->readNends) +
                                 "\nSOLUTION: specify --soloBarcodeMate <= than the number of mates.",std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
@@ -137,11 +141,11 @@ void ParametersSolo::initialize(Parameters *pPin)
                     exitWithError("EXITING because of fatal PARAMETERS error: --soloBarcodeMate " +to_string(barcodeReadIn)+ ">0 for is not allowed for --soloType " + typeStr +
                                     "\nSOLUTION: specify --soloBarcodeMate 0   or   --soloType CB_UMI_Simple",std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
                 };
-                
+
                 barcodeRead = barcodeReadIn-1;
                 barcodeReadSeparate = true;
                 bL = 0; //>0 only for separate barcode read
-                    
+
                 if ( pP->pClip.in[0].N[barcodeRead] == 0 && pP->pClip.in[1].N[barcodeRead] == 0 ){//clipping not specified for the mate with barcodes
                     exitWithError("EXITING because of fatal PARAMETERS error: --soloBarcodeMate " +to_string(barcodeReadIn)+ " specifies that barcode sequence is a part of the mate " +to_string(barcodeReadIn)+
                                     ", which requires clipping the barcode off this mate."
@@ -154,39 +158,39 @@ void ParametersSolo::initialize(Parameters *pPin)
             exitWithError("EXITING because of fatal PARAMETERS error: --readFilesType SAM SE/PE cannot be used with --soloType SmartSeq\n"
                           "SOLUTION: for Smart-seq input from BAM files, use --soloType CB_UMI_Simple , create whitelist of SmartSeq file names, and specify the SAM tag that records these file names in --soloInputSAMattrBarcodeSeq"
                           , std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
-        };            
-            
-        
+        };
+
+
         if (samAtrrBarcodeSeq.at(0) == "-") {
             exitWithError("EXITING because of fatal PARAMETERS error: --readFilesType SAM SE/PE requires --soloInputSAMattrBarcodeSeq.\n"
                           "SOLUTION: specify input SAM attributes for barcode sequence in --soloInputSAMattrBarcodeSeq, and (optionally) quality with --soloInputSAMattrBarcodeQual"
                           , std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
         };
-        
+
         if (samAtrrBarcodeQual.at(0) == "-") {
             warningMessage(" since --readFilesType SAM SE/PE --soloInputSAMattrBarcodeQual - : qualities for barcode read will be replaced with 'H'", pP->inOut->logMain,std::cerr, *pP);
             samAtrrBarcodeQual.clear();
         };
-        
+
         for (auto &tag: samAtrrBarcodeSeq) {
             if (tag.size()!=2) {
                 exitWithError("EXITING because of fatal PARAMETERS error: --soloInputSAMattrBarcodeSeq attributes have to be two-letter strings.\n"
-                              "SOLUTION: specify correct two-letter strings in --soloInputSAMattrBarcodeSeq", 
+                              "SOLUTION: specify correct two-letter strings in --soloInputSAMattrBarcodeSeq",
                               std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
             };
             tag.insert(0,1,'\t');
         };
-        
+
         for (auto &tag: samAtrrBarcodeQual) {
             if (tag.size()!=2) {
                 exitWithError("EXITING because of fatal PARAMETERS error: --soloInputSAMattrBarcodeQual attributes have to be two-letter strings.\n"
-                              "SOLUTION: specify correct two-letter strings in --soloInputSAMattrBarcodeQual", 
+                              "SOLUTION: specify correct two-letter strings in --soloInputSAMattrBarcodeQual",
                               std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
             };
             tag.insert(0,1,'\t');
-        };        
+        };
     };
-    
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////// soloStrand
     if (strandStr=="Unstranded") {
@@ -240,7 +244,7 @@ void ParametersSolo::initialize(Parameters *pPin)
         errOut       += "SOLUTION: re-run without --soloFeatures Velocyto .";
         exitWithError(errOut, std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
     };
-    
+
     if (featureYes[SoloFeatureTypes::Gene]) {
         pP->quant.gene.yes = true;
         pP->quant.yes = true;
@@ -248,31 +252,31 @@ void ParametersSolo::initialize(Parameters *pPin)
     if (featureYes[SoloFeatureTypes::GeneFull]) {
         pP->quant.geneFull.yes = true;
         pP->quant.yes = true;
-        if (!featureYes[SoloFeatureTypes::Gene]) 
+        if (!featureYes[SoloFeatureTypes::Gene])
             pP->quant.gene.yes=false; //if GeneFull is requested, but Gene is not, turn it off - it could have been turned on because of GX/GN attributes
     };
     if (featureYes[SoloFeatureTypes::GeneFull_Ex50pAS]) {
         pP->quant.geneFull_Ex50pAS.yes = true;
         pP->quant.yes = true;
-        if (!featureYes[SoloFeatureTypes::Gene]) 
+        if (!featureYes[SoloFeatureTypes::Gene])
             pP->quant.gene.yes=false; //if GeneFull is requested, but Gene is not, turn it off - it could have been turned on because of GX/GN attributes
     };
     if (featureYes[SoloFeatureTypes::GeneFull_ExonOverIntron]) {
         pP->quant.geneFull_ExonOverIntron.yes = true;
         pP->quant.gene.yes = true; //needed to prioritize exons over introns
         pP->quant.yes = true;
-    };          
-    
+    };
+
     //initialize CB match to WL types
     init_CBmatchWL();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////umiDedup
     umiDedup.initialize(this);
-    
+
     ///////////// finished parameters input
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     //make output directory if needed
     if ( outFileNames[0].find_last_of("/") < outFileNames[0].size() ) {//need to create dir
         string dir1=pP->outFileNamePrefix+outFileNames[0].substr(0,outFileNames[0].find_last_of("/"));
@@ -332,27 +336,27 @@ void ParametersSolo::initialize(Parameters *pPin)
 
         std::sort(cbWL.begin(),cbWL.end());//sort
         auto un1=std::unique(cbWL.begin(),cbWL.end());//collapse identical
-        cbWL.resize(std::distance(cbWL.begin(),un1));        
+        cbWL.resize(std::distance(cbWL.begin(),un1));
         cbWLsize=cbWL.size();
         pP->inOut->logMain << "Number of CBs in the whitelist = " << cbWLsize <<endl;
-        
+
         cbWLstr.resize(cbWLsize);
         for (uint64 ii=0; ii<cbWLsize; ii++)
-             cbWLstr[ii] = convertNuclInt64toString(cbWL[ii],cbL);        
-        
+             cbWLstr[ii] = convertNuclInt64toString(cbWL[ii],cbL);
+
     //////////////////////////////////////////////////////////////////////////////////
     } else if (type==SoloTypes::SmartSeq) {
         cbWLstr=pP->outSAMattrRG;
         cbWLsize=cbWLstr.size();
-        cbWLyes=true; 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+        cbWLyes=true;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     } else if (type==SoloTypes::CB_UMI_Complex) {//complex barcodes: multiple whitelist (one for each CB), varying CB length
         cbWLyes=true; //for complex barcodes, no-whitelist option is not allowed for now
-        
+
         adapterYes=false;
         if (adapterSeq!="-")
             adapterYes=true;
-        
+
         if (cbPositionStr.size() != soloCBwhitelist.size()) {
             ostringstream errOut;
             errOut << "EXITING because of fatal PARAMETER error: number of barcodes in --soloCBposition : "<< cbPositionStr.size() <<" is not equal to the number of WhiteLists in --soloCBwhitelist : " << soloCBwhitelist.size() <<"\n"  ;
@@ -363,17 +367,17 @@ void ParametersSolo::initialize(Parameters *pPin)
         for (uint32 ii=0; ii<cbPositionStr.size(); ii++) {
             cbV[ii].extractPositionsFromString(cbPositionStr[ii]);
         };
-        
+
         umiV.extractPositionsFromString(umiPositionStr);
         umiL = 0; //this will be defined when the first barcode is processed
-              
+
         umiV.adapterLength=adapterSeq.size();//one adapter for all
         cbWLsize=1;
         for (uint32 icb=0; icb<cbV.size(); icb++) {//cycle over WL files
             cbV[icb].adapterLength=adapterSeq.size();//one adapter for all
-            
+
             ifstream & cbWlStream = ifstrOpen(soloCBwhitelist[icb], ERROR_OUT, "SOLUTION: check the path and permissions of the CB whitelist file: " + soloCBwhitelist[icb], *pP);
-            
+
             string seq1;
             while (cbWlStream >> seq1) {//cycle over one WL file
                 uint64 cb1;
@@ -381,18 +385,18 @@ void ParametersSolo::initialize(Parameters *pPin)
                     pP->inOut->logMain << "WARNING: CB whitelist sequence contains non-ACGT base and is ignored: " << seq1 <<endl;
                     continue;
                 };
-                
+
                 uint32 len1=seq1.size();
                 if (len1>=cbV[icb].wl.size())
                     cbV[icb].wl.resize(len1+1);//add new possible lengths to this CB
                 cbV[icb].wl.at(len1).push_back(cb1);
             };
-            
+
             cbV[icb].sortWhiteList(this);
             cbV[icb].wlFactor=cbWLsize;
             cbWLsize *= cbV[icb].totalSize;
         };
-        
+
         complexWLstrings();
     };
 
@@ -414,7 +418,7 @@ void ParametersSolo::initialize(Parameters *pPin)
         exitWithError("EXITING because of fatal PARAMETERS error: UB attribute (corrected UMI) in --outSAMattributes cannot be used with --soloType CB_samTagOut \n" \
                       "SOLUTION: instead, use UR (uncorrected UMI) in --outSAMattributes\n",   std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
     };
-    
+
     ////////////////////////////////////////////////////////////////readInfoYes: which feature is used to fill readInfo. Only one feature is allowed
     readInfoYes.fill(false);
     if (featureYes[SoloFeatureTypes::VelocytoSimple] || featureYes[SoloFeatureTypes::Velocyto]) {//turn readInfo on for Gene needed by VelocytoSimple
@@ -452,7 +456,7 @@ void ParametersSolo::initialize(Parameters *pPin)
                       + "\nSOLUTION: use allowed options: None OR Standard \n",
                       std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
     };
-       
+
     ///////////////////////////////////////////////////////////////////umi filtering
     if (umiFiltering.type[0]=="MultiGeneUMI") {
         umiFiltering.MultiGeneUMI = true;
@@ -469,19 +473,19 @@ void ParametersSolo::initialize(Parameters *pPin)
     } else if (umiFiltering.type[0]=="-") {
         //nothing to do
     } else {
-        exitWithError("EXITING because of fatal PARAMETERS error: unrecognized option in --soloUMIfiltering=" + umiFiltering.type[0] 
+        exitWithError("EXITING because of fatal PARAMETERS error: unrecognized option in --soloUMIfiltering=" + umiFiltering.type[0]
                       + "\nSOLUTION: use allowed options: - or MultiGeneUMI or MultiGeneUMI_CR \n",
                       std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
     };
-    
 
-    
+
+
     //////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////// MultiMappers
     multiMap.initialize(this);
     if (multiMap.yes.multi) {
         if (type==SoloTypes::CB_samTagOut || type==SoloTypes::SmartSeq) {
-            exitWithError("EXITING because of fatal PARAMETERS error: multimapping options do not work for --soloType " +typeStr+ 
+            exitWithError("EXITING because of fatal PARAMETERS error: multimapping options do not work for --soloType " +typeStr+
                           "\nSOLUTION: use default option --soloMultiMappers Unique\n",
                             std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
         };
@@ -501,9 +505,9 @@ void ParametersSolo::umiSwapHalves(uint32 &umi) {
 };
 
 void ParametersSolo::complexWLstrings() {
-    
+
     cbWLstr.resize(cbWLsize);
-    
+
     for (auto &cb : cbV) {//initialize
         cb.iCB=0;
         cb.iLen=cb.minLen;
@@ -521,11 +525,11 @@ void ParametersSolo::complexWLstrings() {
                 cb.iLen=cb.minLen;//reset length
             };
         };
-        
-        for (auto &cb : cbV) 
+
+        for (auto &cb : cbV)
             cbWLstr[ii] += convertNuclInt64toString(cb.wl[cb.iLen][cb.iCB], cb.iLen) + "_";
         cbWLstr[ii].pop_back();
-        
+
         cbV[0].iCB++;//shift by one for the next CB
     };
 };
@@ -535,17 +539,17 @@ void ParametersSolo::cellFiltering()
     string pars1;
     for (auto s=cellFilter.type.begin()+1; s!=cellFilter.type.end(); s++)
         pars1 += ' ' + *s; //concatenate parameters into one string - easier to process that way
-    
-    if (cellFilter.type[0]=="CellRanger2.2") {           
+
+    if (cellFilter.type[0]=="CellRanger2.2") {
         if (cellFilter.type.size()==1) {
             pP->inOut->logMain << "ParametersSolo: using hardcoded filtering parameters for --soloCellFilterType CellRanger2.2" <<endl;
             pars1="3000 0.99 10";
-        } else if (cellFilter.type.size()<4) {            
+        } else if (cellFilter.type.size()<4) {
             string errOut="EXITING because of fatal PARAMETERS error: --soloCellFilterType CellRanger2.2 requires exactly 3 numerical parameters";
             errOut +=     "\nSOLUTION: re-run with --soloCellFilterType CellRanger2.2 <nExpectedCells> <maxPercentile> <maxMinRatio>\n";
             exitWithError(errOut, std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
         };
-        
+
         pP->inOut->logMain << "ParametersSolo: --soloCellFilterType CellRanger2.2 filtering parameters: " << pars1 <<endl;
         istringstream parsStream(pars1);
         parsStream >> cellFilter.knee.nExpectedCells >> cellFilter.knee.maxPercentile >> cellFilter.knee.maxMinRatio;
@@ -554,7 +558,7 @@ void ParametersSolo::cellFiltering()
         if (cellFilter.type.size()==1) {
             pP->inOut->logMain << "ParametersSolo: using hardcoded filtering parameters for --soloCellFilterType EmptyDrops_CR\n";
             pars1="3000 0.99 10 45000 90000 500 0.01 20000 0.01 10000";
-        } else if (cellFilter.type.size()<11) {            
+        } else if (cellFilter.type.size()<11) {
             string errOut="EXITING because of fatal PARAMETERS error: --soloCellFilterType EmptyDrops_CR requires exactly 10 numerical parameters";
             errOut +=     "\nSOLUTION: re-run with --soloCellFilterType EmptyDrops_CR ";
             errOut +=     "<nExpectedCells> <maxPercentile> <maxMinRatio> <indMin> <indMax> <umiMin> <umiMinFracMedian> <candMaxN> <FDR> <simN>\n";
@@ -566,7 +570,7 @@ void ParametersSolo::cellFiltering()
         parsStream >> cellFilter.knee.nExpectedCells >> cellFilter.knee.maxPercentile >> cellFilter.knee.maxMinRatio;
         parsStream >> cellFilter.eDcr.indMin >> cellFilter.eDcr.indMax >> cellFilter.eDcr.umiMin >> cellFilter.eDcr.umiMinFracMedian;
         parsStream >> cellFilter.eDcr.candMaxN >> cellFilter.eDcr.FDR >> cellFilter.eDcr.simN;
-        
+
     } else if (cellFilter.type[0]=="TopCells") {
         if (cellFilter.type.size()<2) {
             string errOut="EXITING because of fatal PARAMETERS error: number of cells not specified for --soloCellFilterType TopCells";
@@ -594,28 +598,28 @@ void UMIdedup::initialize(ParametersSolo *pS)
             if (typesIn[iin] == typeNames[itype])
                 break; //found match
         };
-        
+
         if (itype==tN) {//no match
             std::string tall;
             for (auto &t: typeNames)
                 tall +=" " + t; // concatenate allowed values
-            
+
             exitWithError("EXITING because of fatal PARAMETERS error: unrecognzied option --soloUMIdedup = " + typesIn[iin] + '\n'
                           + "SOLUTION: use allowed values: " + tall + '\n'
                           ,std::cerr, pS->pP->inOut->logMain, EXIT_CODE_PARAMETER, *pS->pP);
         };
-        
+
         types.push_back(itype);
         yes.B[itype] = true;
         yes.N++;
         countInd.I[itype] = iin + 1; //for each type, which column itype's recorded in
-            
+
         if (pS->type == pS->SoloTypes::SmartSeq && (yes.All || yes.Directional || yes.CR) )
             exitWithError("EXITING because of fatal PARAMETERS error: --soloUMIdedup = " + typesIn[iin] + " is not allowed for --soloType SmartSeq\n"
                     + "SOLUTION: use allowed options: Exact and/or NoDedup\n"
-                    ,std::cerr, pS->pP->inOut->logMain, EXIT_CODE_PARAMETER, *pS->pP);            
+                    ,std::cerr, pS->pP->inOut->logMain, EXIT_CODE_PARAMETER, *pS->pP);
     };
-       
+
     //hard-coded for now
     typeMain = types[0]; //main is the 0th entry in typesIn
     countInd.main = 1;   //hard-coded - 1 column is always main
@@ -633,41 +637,41 @@ void MultiMappers::initialize(ParametersSolo* pS)
             if (typesIn[iin] == typeNames[itype])
                 break; //found match
         };
-        
+
         if (itype==tN) {//no match
             std::string tall;
             for (auto &t: typeNames)
                 tall +=" " + t; // concatenate allowed values
-            
+
             exitWithError("EXITING because of fatal PARAMETERS error: unrecognzied option --soloMultiMappers = " + typesIn[iin] + '\n'
                           + "SOLUTION: use allowed values: " + tall + '\n'
                           ,std::cerr, pS->pP->inOut->logMain, EXIT_CODE_PARAMETER, *pS->pP);
         };
-        
+
         if (itype == typeI::Unique)
             continue; //Unique type does not have to be recorded TODO use it to perform filtering and stats
 
-        
+
         types.push_back(itype);
         yes.B[itype] = true;
         yes.N++;
     };
-    
+
     if (yes.N==0) {//only Unique, no multimappers
         yes.multi=false;
         return;
     };
-    
+
     uint32 ind1=1; //start
     for (const auto &itype : types) {
         countInd.I[itype] = ind1;
         ind1 += pS->umiDedup.yes.N;
     };
-    
+
     //hard-coded for now
     typeMain = types[0]; //main is the 0th entry in typesIn
     countInd.main = 1;   //hard-coded - 1 column is always main
-    
+
     yes.multi = yes.Uniform | yes.Rescue | yes.PropUnique | yes.EM;
 };
 
@@ -677,32 +681,32 @@ void ParametersSolo::init_CBmatchWL()
     bool incomp1 =        typeStr=="CB_UMI_Complex" && (CBmatchWL.type!="Exact" && CBmatchWL.type!="1MM" && CBmatchWL.type!="EditDist_2");
     incomp1 = incomp1 || (typeStr=="CB_samTagOut"   && (CBmatchWL.type!="Exact" && CBmatchWL.type!="1MM"));
     incomp1 = incomp1 || (typeStr!="CB_UMI_Complex" &&  CBmatchWL.type=="EditDist_2");
-    
+
     if ( incomp1 ) {
         ostringstream errOut;
         errOut << "EXITING because of fatal PARAMETERS error: --soloCBmatchWLtype "<< CBmatchWL.type << " does not work with --soloType " << typeStr << "\n";
         errOut << "SOLUTION: use allowed option: use --soloCBmatchWLtype Exact (exact matches only) OR 1MM (one match with 1 mismatched base)\n";
         exitWithError(errOut.str(),std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
     };
-    
-    
+
+
     CBmatchWL.mm1 = false;
     CBmatchWL.mm1_multi = false;
-    CBmatchWL.mm1_multi_pc = false;        
+    CBmatchWL.mm1_multi_pc = false;
     CBmatchWL.mm1_multi_Nbase = false;
-    CBmatchWL.oneExact = false; //if true, for a CB matching with 1 mismatch to a WL-CB, requires at least one other read to match this WL-CB. 
+    CBmatchWL.oneExact = false; //if true, for a CB matching with 1 mismatch to a WL-CB, requires at least one other read to match this WL-CB.
                                 //this is true for all options except pseudocount
     CBmatchWL.EditDist_2 = false;
-        
-    if (CBmatchWL.type=="Exact") {    
+
+    if (CBmatchWL.type=="Exact") {
         CBmatchWL.oneExact=true;
     } else if (CBmatchWL.type=="1MM") {
         CBmatchWL.mm1=true;
-        CBmatchWL.oneExact=true;        
+        CBmatchWL.oneExact=true;
     } else if (CBmatchWL.type=="1MM_multi") {
         CBmatchWL.mm1=true;
         CBmatchWL.mm1_multi=true;
-        CBmatchWL.oneExact=true;    
+        CBmatchWL.oneExact=true;
     } else if (CBmatchWL.type=="1MM_multi_pseudocounts") {
         CBmatchWL.mm1=true;
         CBmatchWL.mm1_multi=true;

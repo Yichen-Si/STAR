@@ -107,6 +107,7 @@ typedef uint8_t uint8;
 #define ATTR_gx 30
 #define ATTR_gn 31
 #define ATTR_sF 32
+#define ATTR_R2 33
 
 //BAM definitions
 #define BAM_CIGAR_MaxSize 10000

@@ -37,7 +37,7 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
     */
 
     for (uint32 iag=0; iag<nA; iag++) {
-        
+
         Transcript &aG=*aAll[iag];
 
         //TODO: this only works if PE mates do not protrude. It's better to find the min-start max-end genomic coordinates for all exons.
@@ -46,7 +46,7 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
 
         //binary search through transcript starts
         uint32 tr1=binarySearch1a<uint>(aGstart, trS, nTr);//tr1 has the maximum transcript start such that it is still <= align start: aGstart>=trS[tr1]
-        if (tr1==(uint32) -1) 
+        if (tr1==(uint32) -1)
             continue; //this alignment is outside of range of all transcripts
 
         ++tr1;
@@ -54,7 +54,7 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
             --tr1;
             if ( aGend>trE[tr1] ) //alignment end is outside of this transcript
                 continue;
-                 
+
             bool str1 = int(strandType==0 ? aG.Str : 1-aG.Str) == (trStr[tr1]-1);
             str1 = str1 || (strandType==-1);
 
@@ -79,35 +79,35 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
                     exl += aG.exons[iex][EX_L];
 
                 //vGeStrOvAl.push_back({trGene[tr1], nOverlap, iag, exl, str1, sjConcord});
-                
+
                 vGeneInfo1.push_back({trGene[tr1], iag, {
                                                             str1 && nOverlap==exl && sjConcord,
                                                             !str1 && nOverlap==exl && sjConcord,
-                                                            str1 && nOverlap>exl/2, 
+                                                            str1 && nOverlap>exl/2,
                                                             !str1 && nOverlap>exl/2,
                                                             str1,
                                                             !str1
-                                                        } 
+                                                        }
                                      });
 
                 /* matches Gene
                 vGeneInfo1.push_back({trGene[tr1], iag, {
-                                                            str1 && nOverlap==exl && sjConcord, 
-                                                            false, 
-                                                            false, 
+                                                            str1 && nOverlap==exl && sjConcord,
+                                                            false,
+                                                            false,
                                                             false
-                                                        } 
+                                                        }
                                      });
                 */
 
                 /* matches GeneFull_ExonOverIntron
                 vGeneInfo1.push_back({trGene[tr1], iag, {
-                                                            str1 && nOverlap==exl && sjConcord, 
-                                                            false, 
-                                                            false, 
+                                                            str1 && nOverlap==exl && sjConcord,
+                                                            false,
+                                                            false,
                                                             str1
-                                                        } 
-                                     });                                     
+                                                        }
+                                     });
                 */
 
                 /*
@@ -119,7 +119,7 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
                 if ( str1 && nOverlap==exl && sjConcord ) {//this should match geneConcordant
                     annFeat.fSet.insert(trGene[tr1]);
                 };
-                */               
+                */
             };
 
             //cout << trGene[tr1] <<" "<< nOverlap << " " <<flush;
@@ -143,7 +143,7 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
         /*
         bool bTranscr = false; //transcriptomic
         bool bExonic = false; //sense, exonic: >=50% exonic
-        bool bExonicAS = false; 
+        bool bExonicAS = false;
         bool bIntronic = false; //sense, intronic
         for (auto &v1: vGeStrOvAl) {
             if ( v1.str ) {//sense
@@ -159,7 +159,7 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
                 bExonicAS = true;
             };
         };
-        
+
 
         for (auto &v1: vGeneInfo1) {
             if ( v1.tr ) {//sense
@@ -229,7 +229,7 @@ void Transcriptome::alignExonOverlap(uint nA, Transcript **aAll, int32 strandTyp
                 };
                 break;//first otFinal wins
             };
-        };      
+        };
     };
 };
 
@@ -264,13 +264,13 @@ int32 alignBlocksOverlapExons(Transcript &aG, uint16 exN1, uint32 *exSE1, uint64
 
             if (i1>0 && rs1!=rs2 && aG.canonSJ[i1-1]>=0 )
                 sjConcord = false;
-            
-            if (i1<aG.nExons-1 && re1!=re2 && aG.canonSJ[i1]>=0 )
-                sjConcord = false;                
 
-            if (re1>=re2) 
+            if (i1<aG.nExons-1 && re1!=re2 && aG.canonSJ[i1]>=0 )
+                sjConcord = false;
+
+            if (re1>=re2)
                 i2++;//1 is on the right of 2
-            if (re2>=re1) 
+            if (re2>=re1)
                 i1++;//2 is on the right of 1
         };
     };

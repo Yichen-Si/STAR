@@ -41,7 +41,7 @@ class Parameters {
         struct {
             int32 type;//0 no restart, 1 no mapping - restart from _STARtmp files
         } runRestart; //restart options - in development
-        
+
         //parameters
         vector <string> parametersFiles;
 
@@ -67,7 +67,7 @@ class Parameters {
         vector <vector <string> > readFilesNames;
         vector <string> readFilesCommand;
         vector <string> readFilesManifest;
-               
+
         string readFilesCommandString; //actual command string
         int readFilesIndex;
         pid_t readFilesCommandPID[MAX_N_MATES];
@@ -77,13 +77,15 @@ class Parameters {
         uint readNmates, readNends;
         string readMatesLengthsIn;
         uint32 readQualityScoreBase;
+        bool readTwoIsBarcode;
+        int32 cbS, cbL, ubS, ubL;
 
         vector <string> readNameSeparator;
         vector <char> readNameSeparatorChar;
 
         string outSAMreadID;
         bool outSAMreadIDnumber;
-        
+
         //new: structure for readFiles parameters
         struct {
             vector<string> samAttrKeepIn; //input vector of SAM tags to keep, if readFilesType=SAMtag
@@ -166,7 +168,7 @@ class Parameters {
 
         int outSAMtlen;
 
-        struct {bool NH,HI,AS,NM,MD,nM,jM,jI,RG,XS,rB,vG,vA,vW,ha,ch,MC,CR,CY,UR,UY,CB,UB,GX,GN,gx,gn,sM,sS,sQ,cN,sF;} outSAMattrPresent, outSAMattrPresentQuant;
+        struct {bool NH,HI,AS,NM,MD,nM,jM,jI,RG,XS,rB,vG,vA,vW,ha,ch,MC,CR,CY,UR,UY,CB,UB,GX,GN,gx,gn,sM,sS,sQ,cN,sF,R2;} outSAMattrPresent, outSAMattrPresentQuant;
 
         vector <int> outSAMattrOrder, outSAMattrOrderQuant;
         int outBAMcompression;
@@ -233,7 +235,7 @@ class Parameters {
             vector<string> type;
             bool yes;
         } outSJ;
-        
+
         //output filtering SJs
         string outSJfilterReads;
         vector <int32> outSJfilterCountUniqueMin, outSJfilterCountTotalMin;
@@ -312,7 +314,7 @@ class Parameters {
             struct {
                 bool yes=false;
             } geneFull;
-          
+
             struct {
                 bool yes=false;
             } geneFull_Ex50pAS;
@@ -324,7 +326,7 @@ class Parameters {
             struct {
                 bool yes=false;
             } gene;
-          
+
         } quant;
 
         //variation parameters

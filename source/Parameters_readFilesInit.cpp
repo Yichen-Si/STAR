@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include "serviceFuns.cpp"
 
-void Parameters::readFilesInit() 
+void Parameters::readFilesInit()
 {//initialize read files - but do not open yet
 
     if (readFilesType.at(0) == "Fastx") {
@@ -38,23 +38,23 @@ void Parameters::readFilesInit()
     };
 
     readFilesPrefixFinal=(readFilesPrefix=="-" ? "" : readFilesPrefix);
-    
+
     if (readFilesManifest[0]=="-") {//no manifest, file names in readFilesIn
         readFilesNames.resize(readFilesIn.size());
-        
+
         for (uint32 imate=0; imate<readFilesNames.size(); imate++) {
             splitString(readFilesIn[imate], ',', readFilesNames[imate]);
             if (readFilesNames[imate].back().empty()) {//extra comma at the end
                 readFilesNames[imate].pop_back();
             };
-        
+
             if (imate>0 && readFilesNames[imate].size() != readFilesNames[imate-1].size() ) {
                 ostringstream errOut;
                 errOut <<"EXITING: because of fatal INPUT ERROR: number of input files for mate" << imate+1 <<"="<< readFilesNames[imate].size()  <<" is not equal to that for mate"<< imate-1 <<"="<< readFilesNames[imate-1].size() <<"\n";
                 errOut <<"Make sure that the number of files in --readFilesIn is the same for both mates\n";
                 exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
             };
-            
+
             for ( auto &fn : readFilesNames[imate] )
                 fn = readFilesPrefixFinal + fn; //add prefix
         };
@@ -80,7 +80,7 @@ void Parameters::readFilesInit()
                 };
             };
         };
-        
+
         if (outSAMattrRG.size()>1 && outSAMattrRG.size()!=readFilesN) {
             ostringstream errOut;
             errOut <<"EXITING: because of fatal INPUT ERROR: number of input read files: "<< readFilesN << " does not agree with number of read group RG entries: "<< outSAMattrRG.size() <<"\n";
@@ -90,11 +90,11 @@ void Parameters::readFilesInit()
             for (uint32 ifile=1; ifile<readFilesN; ifile++) {
                 outSAMattrRG.push_back(outSAMattrRG.at(0));
             };
-        };           
-        
+        };
+
     } else {//read file names from manifest
         //TODO check that outSAMattrRGline and readFilesIn are not set, throw an error
-        
+
         ifstream & rfM = ifstrOpen(readFilesManifest[0], ERROR_OUT, "SOLUTION: check the path and permissions for readFilesManifest = " + readFilesManifest[0], *this);
         inOut->logMain << "Reading input file names and read groups from readFileManifest " << readFilesManifest[0] << endl;
 
@@ -115,39 +115,39 @@ void Parameters::readFilesInit()
                 };
                 readFilesNames[imate].push_back( readFilesPrefixFinal + rfMline.substr(itab1,itab2-itab1) );
                 itab1=itab2+1;
-                
+
                 inOut->logMain << readFilesNames[imate].back() <<'\t';
             };
-            
+
             outSAMattrRGlineSplit.push_back(rfMline.substr(itab2+1));
-            
+
             if (outSAMattrRGlineSplit.back().substr(0,3)!="ID:")
                 outSAMattrRGlineSplit.back().insert(0,"ID:");
-            
+
             itab2=outSAMattrRGlineSplit.back().find('\t');
             outSAMattrRG.push_back(outSAMattrRGlineSplit.back().substr(3,itab2-3));
-            
+
             inOut->logMain <<  outSAMattrRGlineSplit.back() <<'\n';
-            
+
         };
         rfM.close();
-        
+
         readNends = ( readFilesNames[1][0].back()=='-' ? 1 : 2);
         readFilesNames.resize(readNends);//resize if readFilesN=1
         readFilesN = readFilesNames[0].size();
     };
 
     inOut->logMain << "Number of fastq files for each mate = " << readFilesN << endl;
-    
+
     readFilesCommandString="";
     if (readFilesCommand.at(0)=="-") {
         if (readFilesN>1)
             readFilesCommandString="cat   ";//concatenate multiple files
     } else {
-        for (uint ii=0; ii<readFilesCommand.size(); ii++) 
+        for (uint ii=0; ii<readFilesCommand.size(); ii++)
             readFilesCommandString+=readFilesCommand.at(ii)+"   "; //concatenate into one string
-    };    
-    
+    };
+
     if (readFilesTypeN==1) {
         readNends=readFilesNames.size(); //for now the number of mates is defined by the number of input files
     } else if (readFilesTypeN==10) {//find the number of mates from the SAM file
@@ -162,6 +162,17 @@ void Parameters::readFilesInit()
             exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
         };
     };
-    
-    readNmates=readNends; //this may be changed later if one of the reads is barcode rea
+
+    if (readTwoIsBarcode) {
+        if (readFilesTypeN==1 && readNends==2) {
+            readNmates=1;
+        } else {
+            ostringstream errOut;
+            errOut <<"EXITING because of FATAL INPUT ERROR: if --readTwoIsBarcode is specified, --readFilesIn requires exactly two input Fastx\n";
+            exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
+        }
+    } else {
+        readNmates=readNends; //this may be changed later if one of the reads is barcode rea
+    }
+
 };

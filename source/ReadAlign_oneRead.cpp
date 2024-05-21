@@ -22,8 +22,8 @@ int ReadAlign::oneRead() {//process one read: load, map, write
 
     if (readStatus[0]==-1) {//finished with the stream
         return -1;
-    };    
-    
+    };
+
     if (P.outFilterBySJoutStage != 2) {
         for (uint32 im=0; im<P.readNmates; im++) {//not readNends: the barcode quality will be calculated separately
             for (uint64 ix=clipMates[im][0].clippedN; ix<readLengthOriginal[im]-clipMates[im][1].clippedN; ix++) {
@@ -31,7 +31,7 @@ int ReadAlign::oneRead() {//process one read: load, map, write
             };
         };
     };
-    
+
     if (P.readNmates==2) {//combine two mates together
         Lread=readLength[0]+readLength[1]+1;
         readLengthPairOriginal=readLengthOriginal[0]+readLengthOriginal[1]+1;
@@ -45,7 +45,7 @@ int ReadAlign::oneRead() {//process one read: load, map, write
 
         //marker for spacer base
         Read1[0][readLength[0]]=MARK_FRAG_SPACER_BASE;
-        
+
         //copy 2nd mate into Read1[0] & reverse-complement
         complementSeqNumbers(Read1[1],Read1[0]+readLength[0]+1,readLength[1]);//complement. Here Read1[1] is still the 2nd mate's numeric-sequence. Later Read1[1] will be reverse complement of the combined read.
         for (uint ii=0;ii<readLength[1]/2;ii++) {
@@ -63,12 +63,13 @@ int ReadAlign::oneRead() {//process one read: load, map, write
         readLength[1]=0;
 
     };
-      
+
     readFileType=readStatus[0];
 
-    complementSeqNumbers(Read1[0],Read1[1],Lread); //returns complement of Reads[ii]
-    for (uint ii=0;ii<Lread;ii++) {//reverse
-        Read1[2][Lread-ii-1]=Read1[1][ii];
+    complementSeqNumbers(Read1[0],Read1[2],Lread); //returns complement of Reads[ii]
+    for (uint ii=0;ii<Lread/2;ii++) {//reverse
+        // Read1[2][Lread-ii-1]=Read1[1][ii];
+        swap(Read1[2][Lread-ii-1],Read1[2][ii]);
     };
 
     statsRA.readN++;
@@ -85,11 +86,11 @@ int ReadAlign::oneRead() {//process one read: load, map, write
     };
 
     peOverlapMergeMap();
-    
+
     multMapSelect();
-    
-    mappedFilter();  
-    
+
+    mappedFilter();
+
     transformGenome();//for now genome transformation happens after multimapper selection, and mapping filter
 
     if (!peOv.yes) {//if the alignment was not mates merged - otherwise the chimeric detection was already done
@@ -120,5 +121,3 @@ int ReadAlign::oneRead() {//process one read: load, map, write
     return 0;
 
 };
-
-

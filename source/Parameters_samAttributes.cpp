@@ -31,14 +31,15 @@ void Parameters::samAttributes(){//everything related to SAM attributes
     outSAMattrPresent.GX=false;
     outSAMattrPresent.GN=false;
     outSAMattrPresent.gx=false;
-    outSAMattrPresent.gn=false;    
+    outSAMattrPresent.gn=false;
     outSAMattrPresent.sM=false;
-    outSAMattrPresent.sS=false;    
+    outSAMattrPresent.sS=false;
     outSAMattrPresent.sQ=false;
     outSAMattrPresent.sF=false;
 
     outSAMattrPresent.cN=false;
-    
+    outSAMattrPresent.R2=false;
+
     //for quant SAM output only NH and HI flags
     outSAMattrPresentQuant=outSAMattrPresent;
     outSAMattrPresentQuant.NH=true;
@@ -92,7 +93,7 @@ void Parameters::samAttributes(){//everything related to SAM attributes
             outSAMattrPresent.vW=true;
         } else if (vAttr1.at(ii)== "ha") {
             outSAMattrOrder.push_back(ATTR_ha);
-            outSAMattrPresent.ha=true;            
+            outSAMattrPresent.ha=true;
         } else if (vAttr1.at(ii)== "RG") {
             outSAMattrOrder.push_back(ATTR_RG);
             outSAMattrOrderQuant.push_back(ATTR_RG);
@@ -136,7 +137,7 @@ void Parameters::samAttributes(){//everything related to SAM attributes
         } else if (vAttr1.at(ii)== "GX") {
             outSAMattrOrder.push_back(ATTR_GX);
             outSAMattrOrderQuant.push_back(ATTR_GX);
-            outSAMattrPresent.GX=true;            
+            outSAMattrPresent.GX=true;
         } else if (vAttr1.at(ii)== "GN") {
             outSAMattrOrder.push_back(ATTR_GN);
             outSAMattrOrderQuant.push_back(ATTR_GN);
@@ -144,11 +145,11 @@ void Parameters::samAttributes(){//everything related to SAM attributes
         } else if (vAttr1.at(ii)== "gx") {
             outSAMattrOrder.push_back(ATTR_gx);
             outSAMattrOrderQuant.push_back(ATTR_gx);
-            outSAMattrPresent.gx=true;            
+            outSAMattrPresent.gx=true;
         } else if (vAttr1.at(ii)== "gn") {
             outSAMattrOrder.push_back(ATTR_gn);
             outSAMattrOrderQuant.push_back(ATTR_gn);
-            outSAMattrPresent.gn=true;            
+            outSAMattrPresent.gn=true;
         } else if (vAttr1.at(ii)== "sM") {
             outSAMattrOrder.push_back(ATTR_sM);
             outSAMattrOrderQuant.push_back(ATTR_sM);
@@ -156,11 +157,11 @@ void Parameters::samAttributes(){//everything related to SAM attributes
         } else if (vAttr1.at(ii)== "sS") {
             outSAMattrOrder.push_back(ATTR_sS);
             outSAMattrOrderQuant.push_back(ATTR_sS);
-            outSAMattrPresent.sS=true;  
+            outSAMattrPresent.sS=true;
         } else if (vAttr1.at(ii)== "sF") {
             outSAMattrOrder.push_back(ATTR_sF);
             outSAMattrOrderQuant.push_back(ATTR_sF);
-            outSAMattrPresent.sF=true;  
+            outSAMattrPresent.sF=true;
         } else if (vAttr1.at(ii)== "sQ") {
             outSAMattrOrder.push_back(ATTR_sQ);
             outSAMattrOrderQuant.push_back(ATTR_sQ);
@@ -168,7 +169,7 @@ void Parameters::samAttributes(){//everything related to SAM attributes
         } else if (vAttr1.at(ii)== "cN") {
             outSAMattrOrder.push_back(ATTR_cN);
             outSAMattrOrderQuant.push_back(ATTR_cN);
-            outSAMattrPresent.cN=true;             
+            outSAMattrPresent.cN=true;
         } else if (vAttr1.at(ii)== "XS") {
             outSAMattrOrder.push_back(ATTR_XS);
             outSAMattrPresent.XS=true;
@@ -176,6 +177,9 @@ void Parameters::samAttributes(){//everything related to SAM attributes
                 inOut->logMain << "WARNING --outSAMattributes contains XS, therefore STAR will use --outSAMstrandField intronMotif" <<endl;
                 outSAMstrandField.type=1;
             };
+        } else if (vAttr1.at(ii)=="R2") {
+            outSAMattrOrder.push_back(ATTR_R2);
+            outSAMattrPresent.R2=true;
         } else {
             ostringstream errOut;
             errOut <<"EXITING because of FATAL INPUT ERROR: unknown/unimplemented SAM atrribute (tag): "<<vAttr1.at(ii) <<"\n";
@@ -224,12 +228,12 @@ void Parameters::samAttributes(){//everything related to SAM attributes
 
     //TODO: BAM-only flag should all have values > 100
     samAttrRequiresBAM(outSAMattrPresent.ch, "ch");
-    samAttrRequiresBAM(outSAMattrPresent.CR, "CR");
+    // samAttrRequiresBAM(outSAMattrPresent.CR, "CR");
     samAttrRequiresBAM(outSAMattrPresent.CY, "CY");
-    samAttrRequiresBAM(outSAMattrPresent.UR, "UR");
+    // samAttrRequiresBAM(outSAMattrPresent.UR, "UR");
     samAttrRequiresBAM(outSAMattrPresent.UY, "UY");
-    samAttrRequiresBAM(outSAMattrPresent.CB, "CB");
-    samAttrRequiresBAM(outSAMattrPresent.UB, "UB");
+    // samAttrRequiresBAM(outSAMattrPresent.CB, "CB");
+    // samAttrRequiresBAM(outSAMattrPresent.UB, "UB");
     samAttrRequiresBAM(outSAMattrPresent.sM, "sM");
     samAttrRequiresBAM(outSAMattrPresent.sS, "sS");
     samAttrRequiresBAM(outSAMattrPresent.sS, "sF");
@@ -240,7 +244,7 @@ void Parameters::samAttributes(){//everything related to SAM attributes
     samAttrRequiresBAM(outSAMattrPresent.vW, "vW");
     samAttrRequiresBAM(outSAMattrPresent.GX, "GX");
     samAttrRequiresBAM(outSAMattrPresent.GN, "GN");
-    
+
     if (outSAMattrPresent.GX || outSAMattrPresent.GN) {//in case GX/GN were requested without Solo
         quant.gene.yes = true;
         quant.yes = true;
@@ -257,7 +261,7 @@ void Parameters:: samAttrRequiresBAM(bool attrYes, string attrTag) {
         errOut <<"SOLUTION: re-run STAR with --outSAMtype BAM Unsorted (and/or) SortedByCoordinate option, or without "<< attrTag <<" tag in --outSAMattributes\n";
         exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
     };
-    
+
     if (outSAMbool)
         inOut->logMain << "WARNING: --outSAMattributes contains "<< attrTag <<" tag. It will be output into BAM file(s), but not SAM file.\n";
 };
