@@ -30,4 +30,3 @@ void mapThreadsSpawn (Parameters &P, ReadAlignChunk** RAchunk) {
         pthread_mutex_unlock(&g_threadChunks.mutexLogMain);
     };
 };
-

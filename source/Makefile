@@ -91,7 +91,10 @@ OBJECTS = systemFunctions.o funPrimaryAlignMark.o \
 	sjdbLoadFromFiles.o sjdbLoadFromStream.o sjdbPrepare.o sjdbBuildIndex.o sjdbInsertJunctions.o mapThreadsSpawn.o \
 	Parameters_readFilesInit.o Parameters_openReadsFiles.o Parameters_closeReadsFiles.o Parameters_readSAMheader.o \
 	bam_cat.o serviceFuns.o GlobalVariables.o \
-	BAMoutput.o BAMfunctions.o ReadAlign_alignBAM.o BAMbinSortByCoordinate.o signalFromBAM.o bamRemoveDuplicates.o BAMbinSortUnmapped.o
+	BAMoutput.o BAMfunctions.o ReadAlign_alignBAM.o BAMbinSortByCoordinate.o signalFromBAM.o bamRemoveDuplicates.o BAMbinSortUnmapped.o \
+	seq_utils.o sbcdWL.o
+
+HPPS := $(wildcard *.hpp)
 
 # SOURCES := $(wildcard *.cpp) $(wildcard *.c)
 
@@ -101,7 +104,7 @@ OBJECTS = systemFunctions.o funPrimaryAlignMark.o \
 %.o : %.c
 	$(CXX) $(CPPFLAGS) $(CFLAGS)  -MMD -MP $< -c
 
-all: cleanCompileInfo STAR$(SFX)
+all: STAR$(SFX)
 
 opal/opal.o : opal/opal.cpp opal/opal.h
 	cd opal && \
@@ -153,7 +156,7 @@ parametersDefault.xxd: parametersDefault
 
 STAR$(SFX) : CXXFLAGS := $(CXXFLAGSextra) $(CXXFLAGS_main) $(CXXFLAGS)
 STAR$(SFX) : LDFLAGS := $(LDFLAGSextra) $(LDFLAGS_shared) $(LDFLAGS)
-STAR$(SFX) : parametersDefault.xxd $(OBJECTS)
+STAR$(SFX) : parametersDefault.xxd $(OBJECTS) ${HPPS}
 	$(CXX) -o STAR$(SFX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS)
 
 STARstatic$(SFX) : CXXFLAGS := $(CXXFLAGSextra) $(CXXFLAGS_main) $(CXXFLAGS)

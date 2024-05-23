@@ -18,13 +18,13 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
             if (P.runThreadN>1) pthread_mutex_lock(&g_threadChunks.mutexInRead);
 
             chunkInSizeBytesTotal={0,0};
-            
+
             while (chunkInSizeBytesTotal[0] < P.chunkInSizeBytes && chunkInSizeBytesTotal[1] < P.chunkInSizeBytes && P.inOut->readIn[0].good() && P.inOut->readIn[1].good()) {
                 char nextChar=P.inOut->readIn[0].peek();
                 if (P.iReadAll==P.readMapNumber) {//do not read any more reads
                     break;
-                    
-                ///////////////////////////////////////////////////////////////////////////////////// SAM                        
+
+                ///////////////////////////////////////////////////////////////////////////////////// SAM
                 } else if (P.readFilesTypeN==10 && P.inOut->readIn[0].good() && P.outFilterBySJoutStage!=2) {//SAM input && not eof && not 2nd stage
 
 
@@ -40,7 +40,7 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
                     } else {
                         P.iReadAll++; //increment read number
 
-                        uint64 flag1; 
+                        uint64 flag1;
                         P.inOut->readIn[0] >> flag1;
                         uint imate1=0;
                         for (uint imate=0;imate<P.readNmates;imate++) {//not readNends: this is SAM input
@@ -49,7 +49,7 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
                                 uint64 flag2;
                                 P.inOut->readIn[0] >> str2; //for imate=0 str1 was already read
                                 P.inOut->readIn[0] >> flag2; //read name and flag
-                                
+
                                 if ( str1 != str2 ) {
                                     ostringstream errOut;
                                     errOut << ERROR_OUT <<" EXITING because of FATAL ERROR in input BAM file: the consecutive lines in paired-end BAM have different read IDs:\n"
@@ -57,7 +57,7 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
                                            << "\n SOLUTION: fix BAM file formatting. Paired-end reads should be always consecutive lines, with exactly 2 lines per paired-end read" ;
                                     exitWithError(errOut.str(),std::cerr, P.inOut->logMain, EXIT_CODE_INPUT_FILES, P);
                                 };
-                                
+
                                 if (! ( ((flag1 & 0x40) && (flag2 & 0x80)) || ((flag2 & 0x40) && (flag1 & 0x80)) ) ) {
                                     ostringstream errOut;
                                     errOut << ERROR_OUT <<" EXITING because of FATAL ERROR in input BAM file: the consecutive lines in paired-end BAM have wrong mate FLAG bits:\n"
@@ -66,7 +66,7 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
                                            << " Mate1 should have 0x40 bit set in the FLAG, Mate2 should have 0x80 bit set in the FLAG";
                                     exitWithError(errOut.str(),std::cerr, P.inOut->logMain, EXIT_CODE_INPUT_FILES, P);
                                 };
-                                
+
                                 str1 = str2;   //used below for both mates
                                 flag1 = flag2; //used below for both mates
                             };
@@ -100,14 +100,14 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
                                 revComplementNucleotides(seq1);
                                 reverse(qual1.begin(),qual1.end());
                             };
-                            
+
                             string attrs;
                             getline(P.inOut->readIn[0], attrs); //rest of the SAM line: str1 is now all SAM attributes - it's added to the read ID line (1st "fastq" line)
                             chunkInSizeBytesTotal[imate1] += sprintf(chunkIn[imate1] + chunkInSizeBytesTotal[imate1], "%s\n%s\n+\n%s\n", attrs.c_str(), seq1.c_str(), qual1.c_str());
                         };
                     };
-                    
-                ///////////////////////////////////////////////////////////////////////////////////// FASTQ    
+
+                ///////////////////////////////////////////////////////////////////////////////////// FASTQ
                 } else if (nextChar=='@') {//fastq, not multi-line
                     P.iReadAll++; //increment read number
                     if (P.outFilterBySJoutStage!=2) {//not the 2nd stage of the 2-stage mapping, read ID from the 1st read
@@ -125,7 +125,7 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
                             if (field2.length()>=3 && field2[1]==':' && field2[2]=='Y' && field2[3]==':' )
                                 passFilterIllumina='Y';
                         };
-                        
+
                         //add extra information to readID line
                         readID += ' '+ to_string(P.iReadAll)+' '+passFilterIllumina+' '+to_string(P.readFilesIndex);
 
@@ -171,19 +171,19 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
 
                             chunkInSizeBytesTotal[imate] += sprintf(chunkIn[imate] + chunkInSizeBytesTotal[imate], " %llu %c %i \n", P.iReadAll, 'N', P.readFilesIndex);
                         };
-                        
+
                         //read multi-line fasta
                         nextChar=P.inOut->readIn[imate].peek();
                         while (nextChar!='@' && nextChar!='>' && nextChar!=' ' && nextChar!='\n' && P.inOut->readIn[imate].good()) {
                             P.inOut->readIn[imate].getline(chunkIn[imate] + chunkInSizeBytesTotal[imate], DEF_readSeqLengthMax + 1 );
-                            if (P.inOut->readIn[imate].gcount()<2) 
+                            if (P.inOut->readIn[imate].gcount()<2)
                                 break; //no more input
-                                
+
                             chunkInSizeBytesTotal[imate] += P.inOut->readIn[imate].gcount()-1; //-1 because \n was counted, bu wee need to remove it
                             if ( int(chunkIn[imate][chunkInSizeBytesTotal[imate]-1]) < 33 ) {//remove control char at the end if present
                                 chunkInSizeBytesTotal[imate]--;
                             };
-                            
+
                             nextChar=P.inOut->readIn[imate].peek();
                         };
                         chunkIn[imate][chunkInSizeBytesTotal[imate]]='\n';
@@ -232,7 +232,7 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
                 g_threadChunks.chunkInN++;
             };
 
-            for (uint imate=0; imate<P.readNends; imate++) 
+            for (uint imate=0; imate<P.readNends; imate++)
                 chunkIn[imate][chunkInSizeBytesTotal[imate]]='\n';//extra empty line at the end of the chunks
 
             if (P.runThreadN>1) pthread_mutex_unlock(&g_threadChunks.mutexInRead);
@@ -252,6 +252,13 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
             chunkFilesCat(P.inOut->outSAM, P.outFileTmp + "/Aligned.out.sam.chunk", g_threadChunks.chunkOutN);
         };
 
+// // Output this chunk
+// if (P.outFilterBySJoutStage!=1 && RA->iRead>0 && P.outBAMunsorted) {
+//     chunkOutBAMunsorted->unsortedFlush();
+// }
+if (P.debug > 0) {
+    break;
+}
     };//cycle over input chunks
 
     if (P.outFilterBySJoutStage!=1 && RA->iRead>0) {//not the first stage of the 2-stage mapping
@@ -260,7 +267,7 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
         if (chunkOutBAMquant!=NULL) chunkOutBAMquant->unsortedFlush();
 
         //the thread is finished mapping reads, concatenate the temp files into output files
-        if (P.pCh.segmentMin>0) {
+        if (P.pCh.segmentMin>0) { // Chimeric
             chunkFstreamCat (RA->chunkOutChimSAM, P.inOut->outChimSAM, P.runThreadN>1, g_threadChunks.mutexOutChimSAM);
             chunkFstreamCat (*RA->chunkOutChimJunction, P.inOut->outChimJunction, P.runThreadN>1, g_threadChunks.mutexOutChimJunction);
         };
@@ -286,11 +293,11 @@ inline uint64 fastqReadOneLine(ifstream &streamIn, char *arrIn)
     uint64 lenIn;
     streamIn.getline(arrIn, DEF_readNameSeqLengthMax+1 );
     lenIn = streamIn.gcount(); //=seqLength+1: includes \0 but not \n. We will replace \0 with \n
-    
+
     if ( int(arrIn[lenIn-2]) < 33 ) {//remove control char at the end if present
         --lenIn;
     };
-    
+
     arrIn[lenIn-1]='\n'; //replace \0 with \n
     return lenIn; //lenIn contains \n at the end
 };

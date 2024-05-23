@@ -111,7 +111,7 @@ std::fstream &fstrOpen (std::string fileName, std::string errorID, Parameters &P
         if (fStreamP->fail()) //did not work <= file does not exist => open with trunc (the above command does not work on new file)
             fStreamP = new std::fstream(fileName.c_str(), std::fstream::in | std::fstream::out | std::fstream::trunc);
     };
-    
+
     if (fStreamP->fail()) {//
         ostringstream errOut;
         errOut << errorID<<": exiting because of *OUTPUT FILE* error: could not create input/output file "<< fileName <<"\n";

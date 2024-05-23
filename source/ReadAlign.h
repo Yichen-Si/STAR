@@ -43,14 +43,14 @@ class ReadAlign {
         uint outFilterMismatchNmaxTotal;
         uint Lread, readLength[MAX_N_MATES], readLengthOriginal[MAX_N_MATES], readLengthPair, readLengthPairOriginal;
         string readBarcodeSeq, readBarcodeQual; //Solo barcode sequence
-        
+
         intScore maxScoreMate[MAX_N_MATES];
 
         uint32 readFilesIndex;
-        
+
         //quality histogram
         array<array<uint64,256>,MAX_N_MATES> qualHist;
-        
+
         //transcripts (aligns)
         uint nW;
         uint *nWinTr; //number of recorded transcripts per window
@@ -60,18 +60,18 @@ class ReadAlign {
         Transcript **trArrayPointer; //linear array of transcripts to store all of them from all windows
 
         uint64 nTr; // number of transcripts called
-        Transcript *trMult[MAX_N_MULTMAP];//selected alignments - to the mapGen        
+        Transcript *trMult[MAX_N_MULTMAP];//selected alignments - to the mapGen
         Transcript *trBest;//bset transcripts
-        
+
         struct {
             bool yes;
             uint64 alN;
             Transcript **alMult;//multimapping transcripts - transformed to output genome
             Transcript *alBest;//best align
         } alignsGenOut;
-        
-        
-        Transcript *alignTrAll;//alignments to transcriptome        
+
+
+        Transcript *alignTrAll;//alignments to transcriptome
 
         ReadAlign *waspRA; //ReadAlign for alternative WASP alignment
         int waspType, waspType1; //alignment ASE-WASP type and
@@ -82,9 +82,9 @@ class ReadAlign {
         void peOverlapChimericSEtoPE(const Transcript *seTrIn1, const Transcript *seTrIn2, Transcript *peTrOut1, Transcript *peTrOut2);
 
         SoloRead *soloRead; //counts reads per CB per and outputs CB/UMI/gene into file, per thread
-        
+
         SpliceGraph *splGraph;
-        
+
         vector<vector<ClipMate>> clipMates;
 
 	//input,output
@@ -158,7 +158,7 @@ class ReadAlign {
         uint storedLmin, uniqLmax, uniqLmaxInd, multLmax, multLmaxN, multNmin, multNminL, multNmax, multNmaxL;
         intScore maxScore;//maximum alignment score
         bool mateMapped[2];
-        
+
         //old chimeric detection
         uint chimN, chimRepeat, chimStr;
         int chimMotif;
@@ -173,7 +173,7 @@ class ReadAlign {
             uint ovS;//first read base of the overlap
             uint mateStart[2];//mates starts in the merged read
         } peOv;//PE  mates overlap/merge/remap structure
-        
+
         //read annotations
         ReadAnnotations readAnnot;
 
@@ -223,7 +223,7 @@ class ReadAlign {
         void peOverlapMergeMap();
         void peMergeMates();
         void peOverlapSEtoPE(ReadAlign &seRA);
-        
+
         //output alignments functions
         void outFilterBySJout();
         void outReadsUnmapped();
@@ -235,5 +235,3 @@ class ReadAlign {
 };
 
 #endif
-
-

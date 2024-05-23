@@ -190,21 +190,6 @@ readNameSeparator           /
 readQualityScoreBase        33
     int>=0: number to be subtracted from the ASCII code to get Phred quality score
 
-readTwoIsBarcode            0
-    bool: if the second fastx file contains only barcode
-
-CBstart                 -1
-    int: barcode start base (only used together with --readTwoIsBarcode 1)
-
-CBlen                   0
-    int>=0: barcode length (only used together with --readTwoIsBarcode 1)
-
-UBstart                -1
-    int: UMI start base (only used together with --readTwoIsBarcode 1)
-
-UBlen                  0 (only used together with --readTwoIsBarcode 1)
-    int>=0: UMI length
-
 ### Read Clipping
 
 clipAdapterType             Hamming
@@ -932,3 +917,42 @@ soloCellReadStats           None
 soloClusterCBfile           -
     string:                 file containing the cluster information for cell barcodes, two columns: CB cluster_index. Only used with --soloFeatures Transcript3p
 #####UnderDevelopment_end
+
+
+### 2024UM Experimental
+debug                   0
+    int: debug mode
+readTwoIsBarcode        0
+    bool: if the second fastx file contains only barcode
+
+CBstart                 -1
+    int: barcode start base (only used together with --readTwoIsBarcode 1)
+
+CBlen                   0
+    int>=0: barcode length (only used together with --readTwoIsBarcode 1)
+
+UBstart                -1
+    int: UMI start base (only used together with --readTwoIsBarcode 1)
+
+UBlen                  0 (only used together with --readTwoIsBarcode 1)
+    int>=0: UMI length
+cbWhitelist            None
+    string: file name of the barcode white list
+crdTag                 None
+    string: tag used to store spatial coordinates
+cbExact                0
+    bool: whether allow (1) mismatch between barcode with white list
+kmerSize               16
+    int>=0: if white list is provided and one mismatch is allowed, specify the size of the spaced kmer
+skipCBifExact          0
+    bool: only output CB if there is a mismatch between the original barcode and the white list
+cbAllowAmbigRef        1
+    bool: whether allow (1) ambiguous base in the white list sequences
+cbAllowAmbigQuery      0
+    bool: whether allow (1) ambiguous base in the barcode sequences
+wlIdxS                 0
+    int>=0: 0-based index of the column in the barcode white list corresponding to the barcode sequences
+wlIdxX                 0
+    int>=0: 0-based index of the column in the barcode white list corresponding to the X coordinates
+wlIdxY                 0
+    int>=0: 0-based index of the column in the barcode white list corresponding to the Y coordinates

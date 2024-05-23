@@ -74,6 +74,8 @@ int main(int argInN, char *argIn[])
     Parameters P; // all parameters
     P.inputParameters(argInN, argIn);
 
+*(P.inOut->logStdOut) << sizeof(P.inOut->readIn) / sizeof(P.inOut->readIn[0]) << std::endl << std::flush;
+
     *(P.inOut->logStdOut) << "\t" << P.commandLine << '\n';
     *(P.inOut->logStdOut) << "\tSTAR version: " << STAR_VERSION << "   compiled: " << COMPILATION_TIME_PLACE << '\n';
     *(P.inOut->logStdOut) << timeMonthDayTime(g_statsAll.timeStart) << " ..... started STAR run\n"
@@ -174,6 +176,7 @@ int main(int argInN, char *argIn[])
         transcriptomeMain = new Transcriptome(P);
     };
 
+if (P.debug != 999) {
     // initialize Stats
     g_statsAll.resetN();
     time(&g_statsAll.timeStartMap);
@@ -299,14 +302,20 @@ int main(int argInN, char *argIn[])
         sysRemoveDir(P.outFileTmp);
     };
 
+}
+*(P.inOut->logStdOut) << "Closing files\n" << std::flush;
+*(P.inOut->logStdOut) << sizeof(P.inOut->readIn) / sizeof(P.inOut->readIn[0]) << " " << P.readFilesIn.size() << ", " << sizeof(P.readFilesCommandPID)/sizeof(P.readFilesCommandPID[0]) << std::endl << std::flush;
+
     P.closeReadsFiles(); // this will kill the readFilesCommand processes if necessary
     // genomeMain.~Genome(); //need explicit call because of the 'delete P.inOut' below, which will destroy P.inOut->logStdOut
     if (genomeMain.sharedMemory != NULL)
     { // need explicit call because this destructor will write to files which are deleted by 'delete P.inOut' below
+*(P.inOut->logStdOut) << "Delete the genome in shared memory\n" << std::flush;
         delete genomeMain.sharedMemory;
         genomeMain.sharedMemory = NULL;
     };
 
+*(P.inOut->logStdOut) << "Delete P.inOut\n" << std::flush;
     delete P.inOut; // to close files
 
     return 0;

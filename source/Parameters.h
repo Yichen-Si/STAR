@@ -12,9 +12,13 @@
 #include "ParametersSolo.h"
 #include "ParametersClip.h"
 #include "ParametersGenome.h"
+#include "sbcdWL.h"
 #include <vector>
 #include <array>
 #include <unordered_set>
+#include <memory>
+
+class SbcdWL;
 
 class Parameters {
 
@@ -77,8 +81,6 @@ class Parameters {
         uint readNmates, readNends;
         string readMatesLengthsIn;
         uint32 readQualityScoreBase;
-        bool readTwoIsBarcode;
-        int32 cbS, cbL, ubS, ubL;
 
         vector <string> readNameSeparator;
         vector <char> readNameSeparatorChar;
@@ -354,6 +356,22 @@ class Parameters {
         //not really parameters, but global variables:
         array<vector<uint64>,2> sjAll;
         uint64 sjNovelN, *sjNovelStart, *sjNovelEnd; //novel junctions collapased and filtered
+
+        ///////////////////////////////////////////////////////////////////////
+        // 2024UM Experimental
+        int32 debug;
+        // Parameters for extracting (spatial) barcode
+        bool readTwoIsBarcode;
+        int32 cbS, cbL, ubS, ubL, kmerSize;
+        // White list input
+        std::string cbWhitelist;
+        uint32 wlIdxS, wlIdxX, wlIdxY;
+        // New white list & spatial coordinate handler
+        std::shared_ptr<SbcdWL> cbWL;
+        bool cbExact, cbAllowAmbigRef, cbAllowAmbigQuery;
+        bool skipCBifExact;
+        std::string crdTag;
+        bool cbErrorCorrection, cbAnnotation;
 
     ////////////////////// CLEAN-UP needed
     InOutStreams *inOut; //main input output streams

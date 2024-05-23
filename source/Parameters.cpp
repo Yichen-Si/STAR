@@ -65,12 +65,6 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoVector <string> (-1, -1, "readFilesManifest", &readFilesManifest));
     parArray.push_back(new ParameterInfoVector <string> (-1, -1, "readFilesSAMattrKeep", &readFiles.samAttrKeepIn));
 
-    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "readTwoIsBarcode", &readTwoIsBarcode));
-    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "CBstart", &cbS));
-    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBstart", &ubS));
-    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "CBlen", &cbL));
-    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBlen", &ubL));
-
     //parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "readStrand", &pReads.strandString));
 
 
@@ -305,6 +299,26 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoScalar <string>   (-1, -1, "soloCellReadStats",&pSolo.readStats.type));
     parArray.push_back(new ParameterInfoScalar <string>   (-1, -1, "soloCBtype",&pSolo.CBtype.typeString));
 
+    ///////////////////////////////////////////////////////////////////////
+    // 2024UM Experimental
+    parArray.push_back(new ParameterInfoScalar <int32> (-1, -1, "debug", &debug));
+    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "readTwoIsBarcode", &readTwoIsBarcode));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "kmerSize", &kmerSize));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "CBstart", &cbS));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBstart", &ubS));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "CBlen", &cbL));
+    parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBlen", &ubL));
+    parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "cbWhitelist", &cbWhitelist));
+    parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "crdTag", &crdTag));
+    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "cbExact", &cbExact));
+    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "skipCBifExact", &skipCBifExact));
+    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "cbAllowAmbigRef", &cbAllowAmbigRef));
+    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "cbAllowAmbigQuery", &cbAllowAmbigQuery));
+    parArray.push_back(new ParameterInfoScalar <uint32> (-1, -1, "wlIdxS", &wlIdxS));
+    parArray.push_back(new ParameterInfoScalar <uint32> (-1, -1, "wlIdxX", &wlIdxX));
+    parArray.push_back(new ParameterInfoScalar <uint32> (-1, -1, "wlIdxY", &wlIdxY));
+    ///////////////////////////////////////////////////////////////////////
+
     parameterInputName.push_back("Default");
     parameterInputName.push_back("Command-Line-Initial");
     parameterInputName.push_back("Command-Line");
@@ -337,7 +351,6 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
 
     commandLine="";
     string commandLineFile="";
-
     if (argInN>1) {//scan parameters from command line
         commandLine += string(argIn[0]);
         for (int iarg=1; iarg<argInN; iarg++) {
@@ -371,7 +384,6 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     };
 
 	createDirectory(outFileNamePrefix, S_IRWXU, "--outFileNamePrefix", *this); //TODO: runDirPerm is hard-coded now. Need to load it from command-line
-
     outLogFileName=outFileNamePrefix + "Log.out";
     inOut->logMain.open(outLogFileName.c_str());
     if (inOut->logMain.fail()) {
@@ -438,7 +450,6 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     };
 
 ///////// Command Line Final
-
     if (argInN>1) {//scan all parameters from command line and override previous values
         inOut->logMain << "###### All USER parameters from Command Line:\n" <<flush;
         istringstream parStreamCommandLine(commandLineFile);
@@ -481,7 +492,6 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
 
 ////////////////////////////////////////////////////// Calculate and check parameters
     iReadAll=0;
-
     pGe.initialize(this);
 
     //directory permissions TODO: this needs to be done before outPrefixFileName is created
@@ -781,6 +791,21 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     //read parameters
     readFilesInit();
 
+    // White list handler
+    cbErrorCorrection = false;
+    cbAnnotation = false;
+    if (cbWhitelist != "None") {
+        cbWL = std::make_shared<SbcdWL>(*this, cbL, kmerSize, cbExact, cbAllowAmbigRef, cbAllowAmbigQuery);
+        cbWL->loadWL(cbWhitelist.c_str(), wlIdxS, wlIdxX, wlIdxY);
+        if (!cbExact) {
+            cbErrorCorrection = true;
+        }
+        if (crdTag.size() != 2) {
+            exitWithError("EXITING because of FATAL ERROR: crdTag must contain exactly two characters (" + crdTag + ")\n", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
+        }
+        cbAnnotation = true;
+    }
+
     //two-pass
     if (parArray.at(twoPass.pass1readsN_par)->inputLevel>0  && twoPass.mode=="None") {
         ostringstream errOut;
@@ -788,7 +813,6 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
         errOut << "SOLUTION: to activate the 2-pass mode, use --twopassMode Basic";
         exitWithError(errOut.str(),std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
     };
-
     twoPass.yes=false;
     twoPass.pass2=false;
     if (twoPass.mode!="None") {//2-pass parameters
@@ -829,11 +853,9 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
             exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
         };
     };
-
     // openReadFiles depends on twoPass for reading SAM header
     if (runMode=="alignReads" && pGe.gLoad!="Remove" && pGe.gLoad!="LoadAndExit") {//open reads files to check if they are present
         openReadsFiles();
-
         if (readNends > 2 && pSolo.typeStr=="None") {//could have >2 mates only for Solo
             ostringstream errOut;
             errOut <<"EXITING: because of fatal input ERROR: number of read mates files > 2: " <<readNends << "\n";
@@ -849,7 +871,6 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
             };
         };
     };
-
     if (outSAMmapqUnique<0 || outSAMmapqUnique>255) {
             ostringstream errOut;
             errOut <<"EXITING because of FATAL input ERROR: out of range value for outSAMmapqUnique=" << outSAMmapqUnique <<"\n";
@@ -946,7 +967,6 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     quant.geneFull.yes=false;
     quant.gene.yes=false;
 
-
     outSAMstrandField.type=0; //none
     if (outSAMstrandField.in=="None") {
         outSAMstrandField.type=0;
@@ -958,16 +978,12 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
         errOut << "SOLUTION: use one of the allowed values of --outSAMstrandField : None or intronMotif \n";
         exitWithError(errOut.str(),std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
     };
-
     //SAM attributes
     samAttributes();
-
     //solo
     pSolo.initialize(this);
-
     //clipping
     pClip.initialize(this);
-
     //alignEnds
     alignEndsType.ext[0][0]=false;
     alignEndsType.ext[0][1]=false;

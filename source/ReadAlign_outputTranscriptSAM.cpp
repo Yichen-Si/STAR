@@ -344,7 +344,6 @@ uint ReadAlign::outputTranscriptSAM(Transcript const &trOut, uint nTrOut, uint i
                         outStream->write(Read0[1]+P.ubS, P.ubL);
                     };
                     break;
-
                 //do nothing - this attributes only work for BAM output
                 case ATTR_ch:
                 case ATTR_CB:
@@ -368,6 +367,21 @@ uint ReadAlign::outputTranscriptSAM(Transcript const &trOut, uint nTrOut, uint i
                     exitWithError(errOut.str(), std::cerr, P.inOut->logMain, EXIT_CODE_PARAMETER, P);
             };
         };
+        if (P.cbErrorCorrection || P.cbAnnotation) {
+            char cb[P.cbL+1];
+            int32_t x, y;
+            int32_t nmiss = P.cbWL->query(Read0[1]+P.cbS, cb, x, y);
+            if (nmiss == 0 && !P.skipCBifExact) {
+                *outStream<< "\tCB:Z:";
+                outStream->write(Read0[1]+P.cbS, P.cbL);
+            } else if (nmiss > 0) {
+                *outStream<< "\tCB:Z:";
+                outStream->write(cb,P.cbL);
+            }
+            *outStream<< "\t" << P.crdTag << ":Z:" << x << "," << y;
+        }
+
+
 
         if (P.readFilesTypeN==10 && !readNameExtra[imate].empty()) {//SAM files as input - output extra attributes
              *outStream << "\t" << readNameExtra.at(imate);
