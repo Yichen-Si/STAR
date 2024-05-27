@@ -15,19 +15,31 @@
 #include "ReadAnnotations.h"
 #include "SpliceGraph.h"
 #include "ClipMate.h"
+#include "sbcdWL.h"
 
 #include <time.h>
 #include <random>
 
 class ReadAlign {
     public:
-        ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk);//allocate arrays
+        ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk, std::shared_ptr<SbcdWL> _cbWL = nullptr);//allocate arrays
+        ~ReadAlign();
         int oneRead();
 
+        std::shared_ptr<SbcdWL> cbWL;
         Genome &mapGen, &genOut; //mapped-to-genome structure
 
         uint64 iRead, iReadAll;
         char **Read1;
+
+        bool seqScope; // 2024UM
+        std::string cbCorrected, cbInfo; // Barcode & info after error correction
+        uint64 umint4, sb;
+        uint32 umiAmbig;
+        int32 cbMatch;
+        bool outputCR, outputUR, outputCB, outputAnno;
+        uint64 homopolymer[4];
+        bool umiHomopoly;
 
         Stats statsRA; //mapping statistics
 

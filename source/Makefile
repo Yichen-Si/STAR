@@ -53,7 +53,7 @@ CXXFLAGS_gdb := -O0 -g3 $(CXXFLAGS_common)
 OBJECTS = systemFunctions.o funPrimaryAlignMark.o \
 	SoloFeature_collapseUMI_Graph.o SoloFeature_collapseUMIall.o ParametersClip_initialize.o ClipMate_clip.o ClipCR4.o opal/opal.o ClipMate_clipChunk.o ClipMate_initialize.o \
 	SoloFeature_loadRawMatrix.o SoloFeature_emptyDrops_CR.o soloInputFeatureUMI.o SoloFeature_countSmartSeq.o SoloFeature_redistributeReadsByCB.o \
-	SoloFeature_quantTranscript.o SoloFeature_sumThreads.o SoloFeature_countVelocyto.o SoloFeature_countCBgeneUMI.o \
+	SoloFeature_quantTranscript.o SoloFeature_sumThreads.o SoloFeature_countVelocyto.o SoloFeature_countCBgeneUMI.o SoloFeature_countCBgeneUMIlite.o \
 	Transcriptome_classifyAlign.o Transcriptome_geneFullAlignOverlap_ExonOverIntron.o Transcriptome_alignExonOverlap.o \
 	SoloFeature_cellFiltering.o \
 	SoloFeature_statsOutput.o bamSortByCoordinate.o SoloBarcode.o \
@@ -96,7 +96,7 @@ OBJECTS = systemFunctions.o funPrimaryAlignMark.o \
 
 HPPS := $(wildcard *.hpp)
 
-# SOURCES := $(wildcard *.cpp) $(wildcard *.c)
+SOURCES := $(wildcard *.cpp) $(wildcard *.c)
 
 %.o : %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP $< -c
@@ -104,7 +104,7 @@ HPPS := $(wildcard *.hpp)
 %.o : %.c
 	$(CXX) $(CPPFLAGS) $(CFLAGS)  -MMD -MP $< -c
 
-all: STAR$(SFX)
+all: depend STAR$(SFX)
 
 opal/opal.o : opal/opal.cpp opal/opal.h
 	cd opal && \
@@ -127,24 +127,31 @@ clean_solo:
 cleanCompileInfo:
 	'rm' -f STAR.o Parameters.o
 
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),CLEAN)
-ifneq ($(MAKECMDGOALS),CLEAN)
-ifneq ($(MAKECMDGOALS),clean_solo)
-ifneq ($(MAKECMDGOALS),STARforMac)
-ifneq ($(MAKECMDGOALS),STARforMacGDB)
+# ifneq ($(MAKECMDGOALS),clean)
+# ifneq ($(MAKECMDGOALS),CLEAN)
+# ifneq ($(MAKECMDGOALS),CLEAN)
+# ifneq ($(MAKECMDGOALS),clean_solo)
+# ifneq ($(MAKECMDGOALS),STARforMac)
+# ifneq ($(MAKECMDGOALS),STARforMacGDB)
 # Depend.list: $(SOURCES) parametersDefault.xxd htslib
 # 	echo $(SOURCES)
 # 	'rm' -f ./Depend.list
 # 	$(CXX) $(CXXFLAGS_common) -MM $^ >> Depend.list
 # include Depend.list
--include $(OBJECTS:.o=.d)
-endif
-endif
-endif
-endif
-endif
-endif
+# # -include $(OBJECTS:.o=.d)
+# endif
+# endif
+# endif
+# endif
+# endif
+# endif
+
+depend: $(SOURCES) parametersDefault.xxd htslib
+	echo $(SOURCES)
+	'rm' -f ./Depend.list
+	$(CXX) $(CXXFLAGS_common) -MM $^ >> Depend.list
+
+include Depend.list
 
 htslib : htslib/libhts.a
 

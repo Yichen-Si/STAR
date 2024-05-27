@@ -2,7 +2,7 @@
 #include <pthread.h>
 #include "ErrorWarning.h"
 
-ReadAlignChunk::ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk) : P(Pin), mapGen(genomeIn) {//initialize chunk
+ReadAlignChunk::ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk, std::shared_ptr<SbcdWL> _cbWL) : P(Pin), cbWL(_cbWL), mapGen(genomeIn) {//initialize chunk
 
     iThread=iChunk;
 
@@ -13,13 +13,13 @@ ReadAlignChunk::ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome 
         chunkTr=NULL;
     };
 
-    RA = new ReadAlign(P, mapGen, chunkTr, iChunk);//new local copy of RA for each chunk
+    RA = new ReadAlign(P, mapGen, chunkTr, iChunk, cbWL);//new local copy of RA for each chunk
 
     RA->iRead=0;
 
     chunkIn=new char* [P.readNends];
     readInStream=new istringstream* [P.readNends];
-    
+
     for (uint ii=0;ii<P.readNends;ii++) {
        chunkIn[ii]=new char[P.chunkInSizeBytesArray];//reserve more space to finish loading one read
        memset(chunkIn[ii],'\n',P.chunkInSizeBytesArray);
@@ -77,8 +77,8 @@ ReadAlignChunk::ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome 
         RA->chunkOutSJ1  = NULL;
     };
 
-    
-    
+
+
 
     if (P.pCh.segmentMin>0) {
        if (P.pCh.out.samOld) {
@@ -90,7 +90,7 @@ ReadAlignChunk::ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome 
     };
 
     if (P.outReadsUnmapped=="Fastx" ) {
-        for (uint32 imate=0; imate < P.readNends; imate++) 
+        for (uint32 imate=0; imate < P.readNends; imate++)
             chunkFstreamOpen(P.outFileTmp + "/Unmapped.out.mate"+ to_string(imate) +".thread",iChunk, RA->chunkOutUnmappedReadsStream[imate]);
     };
 
@@ -111,6 +111,21 @@ ReadAlignChunk::ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome 
         RA->peMergeRA->outBAMcoord=RA->outBAMcoord;
     };
 };
+
+ReadAlignChunk::~ReadAlignChunk() {
+    delete RA;
+    if (chunkTr!=NULL) delete chunkTr;
+    for (uint ii=0;ii<P.readNends;ii++) {
+        delete [] chunkIn[ii];
+        delete readInStream[ii];
+    };
+    delete [] chunkIn;
+    delete [] readInStream;
+    if (P.outSAMbool) {
+        delete [] chunkOutBAM;
+        delete chunkOutBAMstream;
+    };
+}
 
 ///////////////
 void ReadAlignChunk::chunkFstreamOpen(string filePrefix, int iChunk, fstream &fstreamOut) {//open fstreams for chunks
@@ -167,4 +182,3 @@ void ReadAlignChunk::chunkFilesCat(ostream *allOut, string filePrefix, uint &iC)
                 };
             };
 };
-

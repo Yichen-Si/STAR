@@ -24,6 +24,7 @@
 #include <omp.h>
 #include <math.h>
 #include <assert.h>
+#include <memory>
 
 #include "VERSION"
 

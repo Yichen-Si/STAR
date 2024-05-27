@@ -12,13 +12,10 @@
 #include "ParametersSolo.h"
 #include "ParametersClip.h"
 #include "ParametersGenome.h"
-#include "sbcdWL.h"
 #include <vector>
 #include <array>
 #include <unordered_set>
 #include <memory>
-
-class SbcdWL;
 
 class Parameters {
 
@@ -367,11 +364,11 @@ class Parameters {
         std::string cbWhitelist;
         uint32 wlIdxS, wlIdxX, wlIdxY;
         // New white list & spatial coordinate handler
-        std::shared_ptr<SbcdWL> cbWL;
         bool cbExact, cbAllowAmbigRef, cbAllowAmbigQuery;
         bool skipCBifExact;
         std::string crdTag;
         bool cbErrorCorrection, cbAnnotation;
+        bool skipAlignUnmatchWL;
 
     ////////////////////// CLEAN-UP needed
     InOutStreams *inOut; //main input output streams

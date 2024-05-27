@@ -7,7 +7,7 @@
 
 void SoloReadFeature::inputRecords(uint32 **cbP, uint32 cbPstride, vector<uint32> &cbReadCountTotal, vector<readInfoStruct> &readInfo, SoloReadFlagClass &readFlagCounts,
                                    vector<uint32> &nReadPerCBunique1, vector<uint32> &nReadPerCBmulti1)
-{   
+{
     streamReads->flush();
     streamReads->seekg(0,std::ios::beg);
 
@@ -17,8 +17,8 @@ void SoloReadFeature::inputRecords(uint32 **cbP, uint32 cbPstride, vector<uint32
     int32 cbmatch;
     int64 cb;
     vector<uint32> trIdDist;
-    
-    uint64 nReadsIn = 0;
+
+    // uint64 nReadsIn = 0;
 
     while (soloInputFeatureUMI(streamReads, featureType, readIndexYes, P.sjAll, iread, cbmatch, feature, umi, trIdDist, readFlagCounts)) {
         if (feature == (uint32)(-1) && !readIndexYes) {//no feature => no record, this can happen for SJs
@@ -125,15 +125,15 @@ void SoloReadFeature::inputRecords(uint32 **cbP, uint32 cbPstride, vector<uint32
                     nReadPerCBmulti1[cb]++;
                 };
             };
-            
+
             if ( pSolo.readStatsYes[featureType] ) {//has to be new iread to avoid muti-counting multi-gene reads
-                
+
                 //readIsCounted flag was defined above
                 if ( readIsCounted ) {
                     if ( readFlagCounts.checkBit(readFlagCounts.featureU) )
                         readFlagCounts.setBit(readFlagCounts.countedU);
                     if ( readFlagCounts.checkBit(readFlagCounts.featureM) )
-                        readFlagCounts.setBit(readFlagCounts.countedM);    
+                        readFlagCounts.setBit(readFlagCounts.countedM);
                 };
 
                 readFlagCounts.setBit(readFlag.cbMatch); //set this flag for both CB and no-CB, but no-CB will be counted separately below
@@ -170,3 +170,55 @@ void SoloReadFeature::inputRecords(uint32 **cbP, uint32 cbPstride, vector<uint32
     };
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void SoloReadFeature::inputRecords(uint32 **cbP, uint32 cbPstride, SoloReadFlagClass &readFlagCounts, vector<uint32> &nReadPerCBunique, vector<uint32>& nReadPerCB, std::shared_ptr<SbcdWL> cbWL)
+{
+    streamReads->flush();
+    streamReads->seekg(0,std::ios::beg);
+
+    //////////////////////////////////////////// standard features
+    uint32 feature;
+    uint64 cb, icb, umi, iread;
+    int32 cbmatch;
+    vector<uint32> trIdDist;
+    while (soloInputFeatureUMI(streamReads, featureType, readIndexYes, P.sjAll, iread, cbmatch, feature, umi, trIdDist, readFlagCounts)) {
+        if (feature == (uint32)(-1) || cbmatch > 1 || cbmatch < 0) {
+            streamReads->ignore((uint32)-1, '\n');
+            continue;
+        }
+        *streamReads >> cb;
+        icb = cbWL->val_idx_map[cb];
+        //record feature
+        cbP[icb][0]=feature;
+        cbP[icb][1]=umi;
+        nReadPerCB[icb]++;
+        if (feature<geneMultMark)
+            nReadPerCBunique[icb]++;
+        cbP[icb]+=cbPstride;
+        if (cbmatch==0) {
+            stats.V[stats.yessubWLmatchExact]++;
+        }
+    }
+};

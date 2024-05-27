@@ -252,10 +252,6 @@ void ReadAlignChunk::processChunks() {//read-map-write chunks
             chunkFilesCat(P.inOut->outSAM, P.outFileTmp + "/Aligned.out.sam.chunk", g_threadChunks.chunkOutN);
         };
 
-// // Output this chunk
-// if (P.outFilterBySJoutStage!=1 && RA->iRead>0 && P.outBAMunsorted) {
-//     chunkOutBAMunsorted->unsortedFlush();
-// }
 if (P.debug > 0) {
     break;
 }

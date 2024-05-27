@@ -10,18 +10,18 @@ void SoloFeature::statsOutput()
     strOut << "Number of Reads," << g_statsAll.readN <<'\n';
     strOut << "Reads With Valid Barcodes," << 1.0 - double( readBarSum->stats.numInvalidBarcodes() + readFeatSum->stats.numInvalidBarcodes() )/g_statsAll.readN <<'\n';
     strOut << "Sequencing Saturation," << readFeatSum->stats.numSequencingSaturation() <<'\n';
-    
-    if (pSolo.type != pSolo.SoloTypes::SmartSeq) {//qualHist for CB+UMI
+    if (pSolo.type != pSolo.SoloTypes::SmartSeq &&
+        pSolo.type != pSolo.SoloTypes::SeqScope) {//qualHist for CB+UMI
         uint64 q30=0, ntot=0;
         for (uint32 ix=0; ix<256; ix++) {
             ntot += readBarSum->qualHist[ix];
             if (ix >= (P.readQualityScoreBase + 30))
                 q30 += readBarSum->qualHist[ix];
         };
-           
+
         strOut << "Q30 Bases in CB+UMI,"   << double(q30)/ntot <<'\n';
     };
-    
+
     {//qualHist for RNA
         uint64 q30=0, ntot=0;
         for (int ichunk=0; ichunk<P.runThreadN; ichunk++) {
@@ -34,13 +34,13 @@ void SoloFeature::statsOutput()
             };
         };
         strOut << "Q30 Bases in RNA read," << double(q30)/ntot <<'\n';
-    };    
-    
+    };
+
     strOut << "Reads Mapped to Genome: Unique+Multiple," << double(g_statsAll.mappedReadsU+g_statsAll.mappedReadsM)/g_statsAll.readN <<'\n';
     strOut << "Reads Mapped to Genome: Unique," << double(g_statsAll.mappedReadsU)/g_statsAll.readN <<'\n';
-    
+
     string mapfeat=SoloFeatureTypes::Names[featureType];
-    
+
     strOut << "Reads Mapped to "<< mapfeat << ": Unique+Multiple " << SoloFeatureTypes::Names[featureType] <<",";
     if (pSolo.multiMap.yes.multi) {
         strOut << double( readFeatSum->stats.numMappedToTranscriptome() )/g_statsAll.readN <<'\n';
@@ -49,11 +49,11 @@ void SoloFeature::statsOutput()
     };
 
     strOut << "Reads Mapped to "<< mapfeat << ": Unique " << SoloFeatureTypes::Names[featureType] <<"," << double( readFeatSum->stats.numMappedToTranscriptomeUnique() )/g_statsAll.readN <<'\n';
-    
+
     if (pSolo.cellFilter.type[0]!="None"
         && (featureType==SoloFeatureTypes::Gene || featureType==SoloFeatureTypes::GeneFull
          || featureType==SoloFeatureTypes::GeneFull_ExonOverIntron || featureType==SoloFeatureTypes::GeneFull_Ex50pAS)) {
-        //if (pSolo.cellFilter.type[0]=="CellRanger2.2") 
+        //if (pSolo.cellFilter.type[0]=="CellRanger2.2")
         {
             strOut << "Estimated Number of Cells," << filteredCells.nCells <<'\n';
 
@@ -64,11 +64,11 @@ void SoloFeature::statsOutput()
 
             strOut << "UMIs in Cells," << filteredCells.nUMIinCells <<'\n';
             strOut << "Mean UMI per Cell," << filteredCells.meanUMIperCell <<'\n';
-            strOut << "Median UMI per Cell," << filteredCells.medianUMIperCell <<'\n';    
+            strOut << "Median UMI per Cell," << filteredCells.medianUMIperCell <<'\n';
 
             strOut << "Mean "   << SoloFeatureTypes::Names[featureType] << " per Cell," << filteredCells.meanGenePerCell <<'\n';
-            strOut << "Median " << SoloFeatureTypes::Names[featureType] << " per Cell," << filteredCells.medianGenePerCell <<'\n';    
-            strOut << "Total "  << SoloFeatureTypes::Names[featureType] << " Detected," << filteredCells.nGeneDetected <<'\n';    
+            strOut << "Median " << SoloFeatureTypes::Names[featureType] << " per Cell," << filteredCells.medianGenePerCell <<'\n';
+            strOut << "Total "  << SoloFeatureTypes::Names[featureType] << " Detected," << filteredCells.nGeneDetected <<'\n';
         };
 
         //output UMI per cell, sorted
@@ -81,7 +81,7 @@ void SoloFeature::statsOutput()
         };
         strOutUMIperCell.close();
     };
-    
+
     strOut.close();
 
     ///////////////////////////////////////////////// readStatsOutput

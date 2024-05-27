@@ -5,19 +5,19 @@
 #include SAMTOOLS_BGZF_H
 
 void ReadAlignChunk::mapChunk() {//map one chunk. Input reads stream has to be setup in RA->readInStream[ii]
-    
+
     for (uint32 im=0; im<1; im++) {//hardcoded mate 1 5p onyl for now
         RA->clipMates[im][0].clipChunk(chunkIn[im], chunkInSizeBytesTotal[im]);
     };
-    
+
     RA->statsRA.resetN();
 
     for (uint ii=0;ii<P.readNends;ii++) {//clear eof and rewind the input streams
         RA->readInStream[ii]->clear();
         RA->readInStream[ii]->seekg(0,ios::beg);
     };
-    
-    
+
+
 
     if ( P.outSAMorder == "PairedKeepInputOrder" && P.runThreadN>1 ) {//open chunk file
         ostringstream name1("");
@@ -27,9 +27,31 @@ void ReadAlignChunk::mapChunk() {//map one chunk. Input reads stream has to be s
     };
 
     int readStatus=0;
-    while (readStatus==0) {//main cycle over all reads
+    while (readStatus>=0) {//main cycle over all reads
 
         readStatus=RA->oneRead(); //map one read
+
+if (P.debug) {
+    if (readStatus==0 && RA->iRead % ((int32) (P.debug/5)) == 0) {
+        std::cerr << "Debug " << RA->iRead << std::endl << std::flush;
+    }
+    if (readStatus==0 && (int32) RA->iRead > P.debug) {
+        std::cerr << "Debug, end early " << RA->iRead << std::endl << std::flush;
+        readStatus = -1;
+        noReadsLeft = 1;
+    }
+    // if (RA->seqScope && RA->cbMatch != 0) {
+    //     std::cerr << "Debug " << RA->iRead << " cbMatch " << RA->cbMatch << std::endl << std::flush;
+    // } else if (!RA->seqScope && RA->soloRead->readBar->cbMatch != 0) {
+    //     std::cerr << "Debug " << RA->iRead << " cbMatch " << RA->soloRead->readBar->cbMatch << std::endl << std::flush;
+    // }
+}
+        if (readStatus == 2) { // Error in parsing the barcode
+            ostringstream errOut;
+            errOut <<"EXITING because of fatal error: read length is shorter than specified barcode lenths to read\n";
+            errOut <<"Solution: check --cbS --cbL --ubS --ubL\n";
+            exitWithError(errOut.str(),std::cerr, P.inOut->logMain, EXIT_CODE_INPUT_FILES, P);
+        }
 
         if (readStatus==0) {//there was a read processed
             RA->iRead++;

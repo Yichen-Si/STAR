@@ -3,9 +3,19 @@
 #include "Transcript.h"
 #include "ReadAlign.h"
 
-ReadAlign::ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk)
-                    : mapGen(genomeIn), genOut(*genomeIn.genomeOut.g), P(Pin), chunkTr(TrIn)
+ReadAlign::ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk, std::shared_ptr<SbcdWL> _cbWL)
+                    : cbWL(_cbWL), mapGen(genomeIn), genOut(*genomeIn.genomeOut.g), P(Pin), chunkTr(TrIn)
 {
+    seqScope = P.pSolo.type == P.pSolo.SoloTypes::SeqScope; // 2024UM
+    if (P.ubS >= 0 && P.ubL > 0) {
+        for (uint32 ii=0; ii<4; ii++) {
+            homopolymer[ii] = ii;
+            for (uint32 j=1; j < P.ubL; ++j) {
+                homopolymer[ii] = (homopolymer[ii]<<2) | (uint64) ii;
+            }
+        }
+    }
+
     readNmates=P.readNmates; //not readNends
     //RNGs
     rngMultOrder.seed(P.runRNGseed*(iChunk+1));
@@ -33,11 +43,11 @@ ReadAlign::ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, in
         nWAP=new uint[P.alignWindowsPerReadNmax];
         WALrec=new uint[P.alignWindowsPerReadNmax];
         WlastAnchor=new uint[P.alignWindowsPerReadNmax];
-    
+
         WA=new uiWA*[P.alignWindowsPerReadNmax];
         for (uint ii=0;ii<P.alignWindowsPerReadNmax;ii++)
             WA[ii]=new uiWA[P.seedPerWindowNmax];
-        WAincl = new bool [P.seedPerWindowNmax];        
+        WAincl = new bool [P.seedPerWindowNmax];
 
         #ifdef COMPILE_FOR_LONG_READS
         swWinCov = new uint[P.alignWindowsPerReadNmax];
@@ -57,13 +67,13 @@ ReadAlign::ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, in
     for (uint ii=0;ii<P.alignTranscriptsPerReadNmax;ii++)
         trArrayPointer[ii]= &(trArray[ii]);
     trInit = new Transcript;
-    
+
     if (mapGen.genomeOut.convYes) {//allocate output transcripts
         alignsGenOut.alMult = new Transcript*[P.outFilterMultimapNmax];
-        for (uint32 ii=0; ii<P.outFilterMultimapNmax; ii++) 
+        for (uint32 ii=0; ii<P.outFilterMultimapNmax; ii++)
             alignsGenOut.alMult[ii]=new Transcript;
     };
-    
+
     //read
     Read0 = new char*[P.readNends];
     Qual0 = new char*[P.readNends];
@@ -71,19 +81,19 @@ ReadAlign::ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, in
     for (uint32 ii=0; ii<P.readNends; ii++) {
         readNameMates[ii]= new char [DEF_readNameLengthMax];
         Read0[ii]        = new char [DEF_readSeqLengthMax+1];
-        Qual0[ii]        = new char [DEF_readSeqLengthMax+1];        
+        Qual0[ii]        = new char [DEF_readSeqLengthMax+1];
     };
     readNameExtra.resize(P.readNends);
     readName = readNameMates[0];
 
     Read1 = new char*[3];
-    Read1[0]=new char[DEF_readSeqLengthMax+1]; 
-    Read1[1]=new char[DEF_readSeqLengthMax+1]; 
+    Read1[0]=new char[DEF_readSeqLengthMax+1];
+    Read1[1]=new char[DEF_readSeqLengthMax+1];
     Read1[2]=new char[DEF_readSeqLengthMax+1];
-    
+
     for (auto &q: qualHist)
         q.fill(0);
-    
+
     //outBAM
     outBAMoneAlignNbytes = new uint [P.readNmates+2]; //extra piece for chimeric reads //not readNends: this is alignment
     outBAMoneAlign = new char* [P.readNmates+2]; //extra piece for chimeric reads //not readNends: this is alignment
@@ -91,14 +101,14 @@ ReadAlign::ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, in
         outBAMoneAlign[ii]=new char [BAMoutput_oneAlignMaxBytes];
     };
     resetN();
-    
+
     //chim
     chunkOutChimJunction = new fstream;
     chimDet = new ChimericDetection(P, trAll, nWinTr, Read1, mapGen, chunkOutChimJunction, this);
-    
+
     //solo
     soloRead = new SoloRead (P, iChunk);
-    
+
     //clipping
     P.pClip.initializeClipMates(clipMates);
 
@@ -108,6 +118,74 @@ ReadAlign::ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, in
         lastReadStream.open((P.outFileTmp+"/lastRead_"+to_string(iChunk)).c_str());
     #endif
     };
+};
+
+ReadAlign::~ReadAlign() {
+    for (uint i = 0; i < P.readNends; i++) {
+        delete [] Read0[i];
+        delete [] Qual0[i];
+        delete [] readNameMates[i];
+    }
+    delete [] Read0;
+    delete [] Qual0;
+    delete [] readNameMates;
+    for (uint i = 0; i < P.readNmates+2; i++) {
+        delete [] outBAMoneAlign[i];
+    }
+    delete [] outBAMoneAlign;
+    for (uint i = 0; i < 3; ++i) {
+        delete [] Read1[i];
+    }
+    delete [] Read1;
+    delete [] outBAMoneAlignNbytes;
+    delete [] outBAMoneAlign;
+    for (uint ii=0; ii<P.readNmates+2; ii++) {
+        delete [] outBAMoneAlign[ii];
+    }
+    delete chunkOutChimJunction;
+    delete chimDet;
+    delete soloRead;
+
+    delete [] trAll;
+    delete [] nWinTr;
+    delete [] trArray;
+    delete [] trArrayPointer;
+    delete trInit;
+
+    if ( P.quant.trSAM.yes ) {
+        delete [] alignTrAll;
+    };
+    if (P.pGe.gType==101) {
+        delete splGraph;
+    } else {
+        delete [] winBin[0];
+        delete [] winBin[1];
+        delete [] winBin;
+        for (uint i = 0; i < 3; ++i) {
+            delete [] splitR[i];
+        }
+        delete [] splitR;
+        delete [] PC;
+        delete [] WC;
+        delete [] nWA;
+        delete [] nWAP;
+        delete [] WALrec;
+        delete [] WlastAnchor;
+        for (uint ii=0;ii<P.alignWindowsPerReadNmax;ii++)
+            delete [] WA[ii];
+        delete [] WA;
+        delete [] WAincl;
+
+        #ifdef COMPILE_FOR_LONG_READS
+            delete [] swWinCov;
+            delete [] scoreSeedToSeed;
+            delete [] scoreSeedBest;
+            delete [] scoreSeedBestInd;
+            delete [] scoreSeedBestMM;
+            delete [] seedChain;
+        #endif
+    };
+
 };
 
 void ReadAlign::resetN () {//reset resets the counters to 0 for a new read
@@ -122,4 +200,3 @@ void ReadAlign::resetN () {//reset resets the counters to 0 for a new read
         maxScoreMate[ii]=0;
     };
 };
-

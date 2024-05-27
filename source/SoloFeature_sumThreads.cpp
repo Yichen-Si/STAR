@@ -6,25 +6,33 @@
 #include "GlobalVariables.h"
 
 void SoloFeature::sumThreads()
-{   
+{
     //stats
     nReadsInput=g_statsAll.readN+1; //reserve 1 extra
-
-    ///////////////////////////// collect RAchunk->RA->soloRead->readFeat            
+    ///////////////////////////// collect RAchunk->RA->soloRead->readFeat
     for (int ii=0; ii<P.runThreadN; ii++) {//point to
         readFeatAll[ii]= RAchunk[ii]->RA->soloRead->readFeat[pSolo.featureInd[featureType]];
         readFeatAll[ii]->streamReads->flush();
-        readFeatSum->addCounts(*readFeatAll[ii]);        
-    };       
-    
-    // if WL was not defined
-    if (!pSolo.cbWLyes) {//now we can define WL and counts ??? we do not need to do it for every feature???
+        readFeatSum->addCounts(*readFeatAll[ii]);
+    };
+    nReadsMapped=0;
+    if (pSolo.type == pSolo.SoloTypes::SeqScope) { // 2024UM
+        readFeatSum->cbReadCount.resize(cbWL->n_uniq_val);
+        for (auto &cb : readFeatSum->cbReadCountMap) {
+            auto iter = cbWL->val_idx_map.find(cb.first);
+            uint64 icb = iter->second;
+            readFeatSum->cbReadCount[icb]=cb.second;
+            // readFeatSum->cbReadCount[cbWL->val_idx_map[cb.first]]=cb.second;
+            nReadsMapped += cb.second;
+        };
+        nCB = cbWL->n_uniq_val;
+    } else if (!pSolo.cbWLyes) { // if WL was not defined
+        //now we can define WL and counts ??? we do not need to do it for every feature???
         pSolo.cbWLsize=readFeatSum->cbReadCountMap.size();
         pSolo.cbWL.resize(pSolo.cbWLsize);
         pSolo.cbWLstr.resize(pSolo.cbWLsize);
         readFeatSum->cbReadCount.resize(pSolo.cbWLsize);
         readBarSum->cbReadCountExact.resize(pSolo.cbWLsize);
-
         if (pSolo.CBtype.type==1) {//sequence cb
             uint64 icb=0;
             for (auto &cb : readFeatSum->cbReadCountMap) {
@@ -65,7 +73,7 @@ void SoloFeature::sumThreads()
             string line1;
             while (std::getline(*readFeatAll[ii]->streamReads, line1)) {
                 istringstream line1stream(line1);
-                uint64 cb1;            
+                uint64 cb1;
                 line1stream >> cb1 >> cb1 >> cb1;
                 if (featureType==SoloFeatureTypes::SJ)
                     line1stream >> cb1;
@@ -75,17 +83,21 @@ void SoloFeature::sumThreads()
                 readFeatSum->cbReadCount[cb1]++;
             };
         };
-    };    
-    
+    };
+
+    if (pSolo.type == pSolo.SoloTypes::SeqScope) {
+        return;
+    }
+
     //detected CBs
-    nCB=0;nReadsMapped=0;
+    nCB=0;
     for (uint32 ii=0; ii<pSolo.cbWLsize; ii++) {
         if (readFeatSum->cbReadCount[ii]>0) {
             nCB++;
             nReadsMapped += readFeatSum->cbReadCount[ii];
         };
     };
-    
+
     indCBwl.resize(pSolo.cbWLsize, (uint32) -1);
     indCB.resize(nCB);
     nCB=0;//will count it again below
@@ -96,6 +108,5 @@ void SoloFeature::sumThreads()
             ++nCB;
         };
     };
-    
+
 };
-    

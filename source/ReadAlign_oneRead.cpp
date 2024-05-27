@@ -10,7 +10,7 @@ int ReadAlign::oneRead() {//process one read: load, map, write
     //load read name, sequence, quality from the streams into internal arrays
     int readStatus[P.readNends];
 
-    for (uint32 im=0; im<P.readNends; im++) {
+    for (uint32 im=0; im<P.readNends; im++) { // load all mates for one read
         readStatus[im] = readLoad(*(readInStream[im]), P, readLength[im], readLengthOriginal[im], readNameMates[im], Read0[im], Read1[im], Qual0[im], clipMates[im], iReadAll, readFilesIndex, readFilter, readNameExtra[im]);
         if (readStatus[im] != readStatus[0]) {//check if the end of file was reached or not for all files
             ostringstream errOut;
@@ -23,6 +23,7 @@ int ReadAlign::oneRead() {//process one read: load, map, write
     if (readStatus[0]==-1) {//finished with the stream
         return -1;
     };
+    readFileType=readStatus[0];
 
     if (P.outFilterBySJoutStage != 2) {
         for (uint32 im=0; im<P.readNmates; im++) {//not readNends: the barcode quality will be calculated separately
@@ -32,6 +33,7 @@ int ReadAlign::oneRead() {//process one read: load, map, write
         };
     };
 
+    // Processed the part to be aligned
     if (P.readNmates==2) {//combine two mates together
         Lread=readLength[0]+readLength[1]+1;
         readLengthPairOriginal=readLengthOriginal[0]+readLengthOriginal[1]+1;
@@ -63,14 +65,67 @@ int ReadAlign::oneRead() {//process one read: load, map, write
         readLength[1]=0;
 
     };
-
-    readFileType=readStatus[0];
-
-    complementSeqNumbers(Read1[0],Read1[2],Lread); //returns complement of Reads[ii]
-    for (uint ii=0;ii<Lread/2;ii++) {//reverse
-        // Read1[2][Lread-ii-1]=Read1[1][ii];
-        swap(Read1[2][Lread-ii-1],Read1[2][ii]);
+    complementSeqNumbers(Read1[0],Read1[1],Lread); //returns complement of Reads[ii]
+    for (uint ii=0;ii<Lread;ii++) {//reverse
+        Read1[2][Lread-ii-1]=Read1[1][ii];
     };
+
+    // Process identifiers (for solo counting)
+    // Could be more general // 2024UM
+    if (seqScope) {
+        cbMatch = -1;
+        outputCB = 0;
+        outputAnno = 0;
+        // spatial barcode
+        if ((int32) readLengthOriginal[1] < P.cbS+P.cbL) {
+            cbMatch = -11;
+            return 2; // Wrong length, should not happen
+        }
+        outputCR = 1;
+        char cb[P.cbL+1];
+        int32_t x, y;
+        cbMatch = cbWL->query(Read0[1]+P.cbS, cb, x, y);
+        if (cbMatch < 0 || cbMatch > 1) {
+            if (P.skipAlignUnmatchWL) {
+                soloRead->readBar->addStats(cbMatch);
+                return 1; // Does not match white list, skip align
+            }
+        }
+        if (cbMatch == 0 && !P.skipCBifExact) {
+            cbCorrected = std::string(Read0[1]+P.cbS, P.cbL);
+            outputCB = 1;
+        } else if (cbMatch > 0) {
+            cbCorrected = std::string(cb, P.cbL);
+            outputCB = 1;
+        }
+        if (cbMatch >= 0) {
+            cbInfo =  std::to_string(x) + "," + std::to_string(y);
+            outputAnno = 1;
+            sb = (uint64) x << 32 | y;
+        }
+        // UMI
+        if ((int32) readLengthOriginal[1] < P.ubS+P.ubL) {
+            cbMatch = -11;
+            return 2; // Wrong length, should not happen
+        }
+        outputUR = 1;
+        std::vector<uint8_t> nonACGTs;
+        umint4 = seq2bits2(Read0[1]+P.ubS, P.ubL, nonACGTs);
+        umiAmbig = nonACGTs.size(); // We could allow ambiguous bases in UMI, but STARsolo does not
+        umiHomopoly = 0;
+        if (umiAmbig > 0) {
+            cbMatch = -23;
+        } else {
+            for (uint i = 0; i < 4; ++i) {
+                if (umint4 == homopolymer[i]) {
+                    umiHomopoly = 1;
+                    cbMatch = -24;
+                    break;
+                }
+            }
+        }
+        soloRead->readBar->addStats(cbMatch);
+    }
 
     statsRA.readN++;
     statsRA.readBases += readLength[0]+readLength[1];

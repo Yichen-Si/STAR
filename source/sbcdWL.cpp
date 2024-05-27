@@ -1,9 +1,10 @@
 #include "sbcdWL.h"
 
-int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, uint32_t icol_y) {
+int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, uint32_t icol_y, bool _list_val) {
     if (!active) {
         return 0;
     }
+    unique_value_map = _list_val;
     if (icol_s == icol_x || icol_s == icol_y || icol_x == icol_y) {
         exitWithError("Error: Column indices must be unique", std::cerr, P.inOut->logMain, EXIT_CODE_PARAMETER, P);
     }
@@ -19,17 +20,24 @@ int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, u
     }
 
     uint64_t ref_tot = 0, ref_ambig = 0, ref_skip = 0;
+    n_uniq_val = 0;
     while(true) {
         ref_tot++;
         if (ref_tot % 500000 == 0) {
             printf("SbcdWL::loadWL: processed %lu records, %lu contain one ambiguous base, %lu are skipped\n", ref_tot, ref_ambig, ref_skip);
         }
-        uint64_t xy = (uint64_t) atoi(&str.s[fields[icol_x]]) << 32 | atoi(&str.s[fields[icol_y]]);
+        uint64_t xy = (uint64_t) atoi(&str.s[fields[icol_x]]) << 32 | (uint64_t) atoi(&str.s[fields[icol_y]]);
         int32_t ret = bcd_match.add_ref(&str.s[fields[icol_s]], xy);
         if (ret < 0) {
             ref_skip++;
         } else if (ret > 0) {
             ref_ambig++;
+        }
+        if (unique_value_map && ret >= 0) {
+            auto it = val_idx_map.emplace(xy, n_uniq_val);
+            if (it.second) {
+                n_uniq_val++;
+            }
         }
         lstr = hts_getline(hp, KS_SEP_LINE, &str);
         if (lstr <= 0) {
@@ -40,7 +48,7 @@ int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, u
         if (nfields < min_fields) {
             exitWithError("Error: ill-formated line in the white list", std::cerr, P.inOut->logMain, EXIT_CODE_INPUT_FILES, P);
         }
-        if (P.debug && ref_tot > 500000) {break;}
+        if (P.debug % 3 == 1 && ref_tot > 500000) {break;}
     }
     bcd_match.process_ambig_ref();
     P.inOut->logProgress << "Read white list with " << ref_tot << " record including " << ref_ambig << " with one ambiguous base, skipped " << ref_skip << std::endl << std::flush;
@@ -55,7 +63,7 @@ int32_t SbcdWL::query(const char* seq, char* cb, int32_t& x, int32_t& y) {
     uint64_t nt4cb, xy;
     int32_t nmiss = bcd_match.query(seq, nt4cb, xy);
     if (nmiss < 0) {
-        return -1;
+        return nmiss;
     }
     x = (int32_t) (xy >> 32);
     y = (int32_t) (xy & 0xFFFFFFFF);

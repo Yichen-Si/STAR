@@ -9,6 +9,7 @@
 #include "SoloCommon.h"
 #include "SoloReadFeatureStats.h"
 #include "ReadAnnotations.h"
+#include "sbcdWL.h"
 
 class SoloFeature;
 
@@ -19,9 +20,9 @@ public:
 
     vector<uint32> cbReadCount;
     map <uintCB,uint32> cbReadCountMap;
-    
+
     vector<uint32> transcriptDistCount;
-    
+
     bool readInfoYes ,readIndexYes;
 
     fstream *streamReads;
@@ -29,7 +30,7 @@ public:
     string cbSeq, umiSeq, cbQual, umiQual;
 
     SoloReadFlagClass readFlag;
-    
+
     SoloReadFeatureStats stats;
 
     SoloReadFeature (int32 feTy, Parameters &Pin, int iChunk);
@@ -39,7 +40,8 @@ public:
     void statsOut(ofstream &streamOut);
     void inputRecords(uint32 **cbP, uint32 cbPstride, vector<uint32> &cbReadCountTotal, vector<readInfoStruct> &readInfo, SoloReadFlagClass &readFlagCounts,
                       vector<uint32> &nReadPerCBunique1, vector<uint32> &nReadPerCBmulti1);
-
+    // 2024UM For SeqScope Only, Only allow unique map
+    void inputRecords(uint32 **cbP, uint32 cbPstride, SoloReadFlagClass &readFlagCounts, vector<uint32> &nReadPerCBunique, vector<uint32>& nReadPerCB, std::shared_ptr<SbcdWL> cbWL);
 private:
     const int32 featureType;
 

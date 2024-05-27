@@ -10,18 +10,12 @@ BcdMatch<T>::BcdMatch(uint32_t _bcd_len, uint32_t _k, bool _exact, bool _ar, boo
 
 template <typename T>
 void BcdMatch<T>::init(uint32_t _bcd_len, uint32_t _k, bool _exact, bool _ar, bool _aq) {
+    reset();
     bcd_len = _bcd_len;
     kmer_size = _k;
     exact_only = _exact;
     allow_ambig_ref = _ar;
     allow_ambig_query = _aq;
-    if (patterns.size() > 0) {
-        patterns.clear();
-        pattern2sbcd.clear();
-    }
-    if (sbcd_ref.size() > 0) {
-        reset();
-    }
     if (bcd_len > 32) {
         std::cerr << "BcdMatch::init: Currently only support barcodes with length <= 32\n";
         bcd_len = 32;
@@ -85,26 +79,18 @@ template <typename T>
 int32_t BcdMatch<T>::add_ref(const char* seq, T& val) {
     std::vector<uint8_t> nonACGTs;
     uint64_t bcd = seq2bits2(seq, bcd_len, nonACGTs);
-    if (nonACGTs.size() > max_ambig) {
-        return -1;
-    }
     if (nonACGTs.size() == 0) {
         sbcd_ref[bcd] = val;
         if (!exact_only) {add_keys(bcd);}
         return 0;
     }
-
-    uint16_t abase = ((uint16_t) nonACGTs[0] << 8) | seq[nonACGTs[0]];
-    // auto ptr = ambig_temp.find(bcd);
-    // if (ptr == ambig_temp.end()) {
-    //     ambig_temp[bcd] = std::make_pair(abase, val);
-    // } else {
-    //     ptr->second.first |= 0x8000;
-    // }
-
     // Assume reference barcodes are unique
-    ambig_temp.emplace(bcd, std::make_pair(abase, val));
-    return nonACGTs.size();
+    if (allow_ambig_ref && nonACGTs.size() <= max_ambig) {
+        uint16_t abase = ((uint16_t) nonACGTs[0] << 8) | seq[nonACGTs[0]];
+        ambig_temp.emplace(bcd, std::make_pair(abase, val));
+        return nonACGTs.size();
+    }
+    return -1;
 }
 
 
@@ -119,7 +105,7 @@ int32_t BcdMatch<T>::query_unambig_besthit_(uint64_t bcd, uint64_t& cb, T& val, 
             int32_t nmiss = nt4_hamming_dist(bcd, ref, max_mismatch);
             if (nmiss <= max_mismatch) {
                 if (max_mismatch == 1 && hits.size() > 0) {
-                    return -1;
+                    return -3; // multiple matching with same distance
                 }
                 hits.emplace(ref, nmiss);
             }
@@ -156,6 +142,9 @@ int32_t BcdMatch<T>::query_unambig_besthit_(uint64_t bcd, uint64_t& cb, T& val, 
 
 template <typename T>
 void BcdMatch<T>::process_ambig_ref() {
+    if (!allow_ambig_ref) {
+        return;
+    }
     int32_t nambig = 0, nkept = 0;
     for (auto kv : ambig_temp) {
         // if (kv.second.first & 0x8000) {
@@ -210,11 +199,16 @@ int32_t BcdMatch<T>::query(const char* seq, uint64_t& cb, T& val, int32_t max_mi
             val = ptr->second;
             return 0;
         }
-        ptr = ambig_sbcd.find(bcd);
-        if (ptr != ambig_sbcd.end()) {
-            cb = bcd;
-            val = ptr->second;
-            return max_ambig;
+        if (exact_only) {
+            return -1;
+        }
+        if (allow_ambig_ref && max_mismatch >= max_ambig) {
+            ptr = ambig_sbcd.find(bcd);
+            if (ptr != ambig_sbcd.end()) {
+                cb = bcd;
+                val = ptr->second;
+                return max_ambig;
+            }
         }
         return query_unambig_besthit_(bcd, cb, val, max_mismatch);
     }

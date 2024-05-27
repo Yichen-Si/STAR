@@ -18,22 +18,23 @@
 class SoloFeature {
 private:
     Parameters &P;
-    ReadAlignChunk **RAchunk;    
+    ReadAlignChunk **RAchunk;
     Transcriptome &Trans;
-    
+
     SoloFeature **soloFeatAll;
-    
+
     static const uint32 umiArrayStride=3;
     enum {rguG, rguU, rguR};
     uint32 rguStride;
-    
+
 public:
     ParametersSolo &pSolo;
+    std::shared_ptr<SbcdWL> cbWL;
 
     SoloReadFeature *readFeatSum, **readFeatAll;
     SoloReadBarcode *readBarSum;
 
-    const int32 featureType;   
+    const int32 featureType;
 
     uint64 nReadsMapped, nReadsInput; //total number of mapped reads
     uint32 nCB;
@@ -56,42 +57,43 @@ public:
     vector<uint32> countCellGeneUMI;//sparsified matrix for the counts, each entry is: geneID count1 count2 ... countNcounts
     vector<uint32> countCellGeneUMIindex;//index of CBs in the count matrix
     uint32 countMatStride; //number of counts per entry in the count matrix
-    
+
     struct {
         vector<double> m;
         vector<uint32> i;
         uint32 s;
     } countMatMult;
-    
+
     vector<unordered_map<uint32, unordered_set<uint64>>> cbFeatureUMImap; //for SmartSeq counting
-       
+
     string outputPrefix, outputPrefixFiltered;
-    
+
     SoloFilteredCells filteredCells;
-    
+
     array<vector<uint64>,2> sjAll;
-    
+
     vector<readInfoStruct> readInfo; //corrected CB/UMI information for each read
     SoloReadFlagClass readFlagCounts;
 
-    
+
     vector<uint32> redistrFilesCBindex, redistrFilesCBfirst; //redistr file for each CB, CB boundaries in redistributed files
     vector<uint64> redistrFilesNreads; //number of reads in each file
     vector <fstream*> redistrFilesStreams;
 
-    SoloFeature(Parameters &Pin, ReadAlignChunk **RAchunk, Transcriptome &inTrans, int32 feTy, SoloReadBarcode *readBarSumIn, SoloFeature **soloFeatAll);
+    SoloFeature(Parameters &Pin, ReadAlignChunk **RAchunk, Transcriptome &inTrans, int32 feTy, SoloReadBarcode *readBarSumIn, SoloFeature **soloFeatAll, std::shared_ptr<SbcdWL> _cbWL = nullptr);
     void clearLarge(); //clear large vectors
     void processRecords();
     void sumThreads();
     void countSmartSeq();
     void countCBgeneUMI();
+    void countCBgeneUMIlite(); // 2024UM
     void countVelocyto();
     void quantTranscript();
-    
+
     void collapseUMI(uint32 iCB, uint32 *umiArray);
     void collapseUMI_CR(uint32 iCB, uint32 *umiArray);
     void collapseUMIall();
-    void collapseUMIperCB(uint32 iCB, vector<uint32> &umiArray, vector<uint32> &gID,  vector<uint32> &gReadS);
+    void collapseUMIperCB(uint64 iCB, vector<uint32> &umiArray, vector<uint32> &gID,  vector<uint32> &gReadS);
 
     uint32 umiArrayCorrect_CR         (const uint32 nU0, uintUMI *umiArr, const bool readInfoRec, const bool nUMIyes, unordered_map <uintUMI,uintUMI> &umiCorr);
     uint32 umiArrayCorrect_Directional(const uint32 nU0, uintUMI *umiArr, const bool readInfoRec, const bool nUMIyes, unordered_map <uintUMI,uintUMI> &umiCorr, const int32 dirCountAdd);
@@ -101,7 +103,7 @@ public:
     void addBAMtags(char *&bam0, uint32 &size0, char* bam1);
     void statsOutput();
     void redistributeReadsByCB();
-    
+
     void cellFiltering();
     void emptyDrops_CR();
     void loadRawMatrix();

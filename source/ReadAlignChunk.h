@@ -13,18 +13,19 @@ class ReadAlignChunk {//chunk of reads and alignments
 public:
     Parameters& P;
     ReadAlign* RA;
+    std::shared_ptr<SbcdWL> cbWL;
 
     Transcriptome *chunkTr;
 
     char **chunkIn; //space for the chunk of input reads
-    array<uint64, MAX_N_MATES> chunkInSizeBytesTotal;    
-    
+    array<uint64, MAX_N_MATES> chunkInSizeBytesTotal;
+
     char *chunkOutBAM, *chunkOutBAM1;//space for the chunk of output SAM
     OutSJ *chunkOutSJ, *chunkOutSJ1;
 
     BAMoutput *chunkOutBAMcoord, *chunkOutBAMunsorted, *chunkOutBAMquant;
     Quantifications *chunkQuants;
-    
+
     istringstream** readInStream;
     ostringstream*  chunkOutBAMstream;
     ofstream chunkOutBAMfile;
@@ -36,7 +37,8 @@ public:
     int iThread; //current thread
     uint chunkOutBAMtotal; //total number of bytes in the write buffer
 
-    ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk);
+    ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk, std::shared_ptr<SbcdWL> _cbWL = nullptr);
+    ~ReadAlignChunk();
     void processChunks();
     void mapChunk();
     void chunkFstreamOpen(string filePrefix, int iChunk, fstream &fstreamOut);

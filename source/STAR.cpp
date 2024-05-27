@@ -74,8 +74,6 @@ int main(int argInN, char *argIn[])
     Parameters P; // all parameters
     P.inputParameters(argInN, argIn);
 
-*(P.inOut->logStdOut) << sizeof(P.inOut->readIn) / sizeof(P.inOut->readIn[0]) << std::endl << std::flush;
-
     *(P.inOut->logStdOut) << "\t" << P.commandLine << '\n';
     *(P.inOut->logStdOut) << "\tSTAR version: " << STAR_VERSION << "   compiled: " << COMPILATION_TIME_PLACE << '\n';
     *(P.inOut->logStdOut) << timeMonthDayTime(g_statsAll.timeStart) << " ..... started STAR run\n"
@@ -179,6 +177,20 @@ int main(int argInN, char *argIn[])
 if (P.debug != 999) {
     // initialize Stats
     g_statsAll.resetN();
+
+    // Initialize barcode white list // 2024UM
+    std::shared_ptr<SbcdWL> cbWL = nullptr;
+    if (P.cbWhitelist != "None") {
+        time(&g_statsAll.timeStartMap);
+        *P.inOut->logStdOut << timeMonthDayTime(g_statsAll.timeStartMap) << " ..... initializing spatial barcode reference\n" << flush;
+
+        cbWL = std::make_shared<SbcdWL>(P, P.cbL, P.kmerSize, P.cbExact, P. cbAllowAmbigRef, P.cbAllowAmbigQuery);
+        cbWL->loadWL(P.cbWhitelist.c_str(), P.wlIdxS, P.wlIdxX, P.wlIdxY, P.pSolo.type == P.pSolo.SoloTypes::SeqScope);
+
+        time(&g_statsAll.timeStartMap);
+        *P.inOut->logStdOut << timeMonthDayTime(g_statsAll.timeStartMap) << " ..... finished constructing spatial barcode reference\n" << flush;
+    }
+
     time(&g_statsAll.timeStartMap);
     *P.inOut->logStdOut << timeMonthDayTime(g_statsAll.timeStartMap) << " ..... started mapping\n"
                         << flush;
@@ -197,9 +209,8 @@ if (P.debug != 999) {
     ReadAlignChunk *RAchunk[P.runThreadN];
     for (int ii = 0; ii < P.runThreadN; ii++)
     {
-        RAchunk[ii] = new ReadAlignChunk(P, genomeMain, transcriptomeMain, ii);
+        RAchunk[ii] = new ReadAlignChunk(P, genomeMain, transcriptomeMain, ii, cbWL);
     };
-
     if (P.runRestart.type != 1)
         mapThreadsSpawn(P, RAchunk);
 
@@ -221,7 +232,6 @@ if (P.debug != 999) {
 
         mapThreadsSpawn(P, RAchunk);
     };
-
     // close some BAM files
     if (P.inOut->outBAMfileUnsorted != NULL)
     {
@@ -248,16 +258,17 @@ if (P.debug != 999) {
 
     // no need for genome anymore, free the memory
     genomeMain.freeMemory();
-
     // aggregate output junctions
     // collapse splice junctions from different threads/chunks, and output them
-    if (P.runRestart.type != 1 && P.outSJ.yes)
+    if (P.runRestart.type != 1 && P.outSJ.yes) {
         outputSJ(RAchunk, P);
-
+    }
     // solo counts
-    Solo soloMain(RAchunk, P, *RAchunk[0]->chunkTr);
-    soloMain.processAndOutput();
 
+if (P.debug % 10 != 2) {
+
+    Solo soloMain(RAchunk, P, *RAchunk[0]->chunkTr, cbWL);
+    soloMain.processAndOutput();
     if (P.quant.geCount.yes)
     { // output gene quantifications
         for (int ichunk = 1; ichunk < P.runThreadN; ichunk++)
@@ -301,21 +312,17 @@ if (P.debug != 999) {
     {
         sysRemoveDir(P.outFileTmp);
     };
-
 }
-*(P.inOut->logStdOut) << "Closing files\n" << std::flush;
-*(P.inOut->logStdOut) << sizeof(P.inOut->readIn) / sizeof(P.inOut->readIn[0]) << " " << P.readFilesIn.size() << ", " << sizeof(P.readFilesCommandPID)/sizeof(P.readFilesCommandPID[0]) << std::endl << std::flush;
+}
 
     P.closeReadsFiles(); // this will kill the readFilesCommand processes if necessary
     // genomeMain.~Genome(); //need explicit call because of the 'delete P.inOut' below, which will destroy P.inOut->logStdOut
     if (genomeMain.sharedMemory != NULL)
     { // need explicit call because this destructor will write to files which are deleted by 'delete P.inOut' below
-*(P.inOut->logStdOut) << "Delete the genome in shared memory\n" << std::flush;
         delete genomeMain.sharedMemory;
         genomeMain.sharedMemory = NULL;
     };
 
-*(P.inOut->logStdOut) << "Delete P.inOut\n" << std::flush;
     delete P.inOut; // to close files
 
     return 0;

@@ -26,17 +26,13 @@ void ParametersSolo::initialize(Parameters *pPin)
     ///////////////////////////////--soloType
     barcodeStart=barcodeEnd=0; //this means that the entire barcodeRead is considered barcode. Will change it for simple barcodes.
     yes = true;
-    if (typeStr=="None" || typeStr=="SmartSeq") {//solo SAM attributes not allowed
-
-        // if (   pP->outSAMattrPresent.CR  || pP->outSAMattrPresent.CY  || pP->outSAMattrPresent.UR
-        //     || pP->outSAMattrPresent.UY  || pP->outSAMattrPresent.CB  || pP->outSAMattrPresent.UB
-        //     || pP->outSAMattrPresent.sS  || pP->outSAMattrPresent.sQ  || pP->outSAMattrPresent.sM
-        //     || pP->outSAMattrPresent.sF
-        //    )
+    if (typeStr=="SeqScope") { // 2024UM
+        samAttrYes = false; // separate barcode processing from gene counting
+    }
+    if (typeStr=="None" || typeStr=="SmartSeq" || typeStr=="SeqScope") {//solo SAM attributes not allowed
         if (   pP->outSAMattrPresent.CY  || pP->outSAMattrPresent.UY  ||
                pP->outSAMattrPresent.sS  || pP->outSAMattrPresent.sQ  || pP->outSAMattrPresent.sM  || pP->outSAMattrPresent.sF
-           )
-        {
+           ) {
             ostringstream errOut;
             errOut <<"EXITING because of FATAL INPUT ERROR: --outSAMattributes contains CR/CY/UR/UY/CB/UB tags which are not allowed for --soloType " << typeStr <<'\n';
             errOut <<"SOLUTION: re-run STAR without these attribures\n";
@@ -49,6 +45,9 @@ void ParametersSolo::initialize(Parameters *pPin)
         yes = false;
         samAttrYes = false;
         return;
+    } else if (typeStr=="SeqScope") {
+        type=SoloTypes::SeqScope;
+        samAttrYes = false;
     } else if (typeStr=="CB_UMI_Simple" || typeStr=="Droplet") {
         type=SoloTypes::CB_UMI_Simple;
         if (umiL > 16) {
@@ -124,6 +123,8 @@ void ParametersSolo::initialize(Parameters *pPin)
     if (pP->readFilesTypeN != 10) {//input from FASTQ
         if (type==SoloTypes::SmartSeq) {//no barcode read
             //TODO: a lot of parameters should not be defined for SmartSeq option - check it here
+        } else if (type==SoloTypes::SeqScope) {
+            // Barcodes are handeled separately, outside solo
         } else {//all other types require barcode read
             if (barcodeReadIn == 0) {//barcode read is separate - needs to be the last read in --readFilesIn
                 if (pP->readNends < 2) {
@@ -321,7 +322,7 @@ void ParametersSolo::initialize(Parameters *pPin)
                     exitWithError(errOut.str(),std::cerr, pP->inOut->logMain, EXIT_CODE_INPUT_FILES, *pP);
                 };
                 uint64 cb1;
-                if (convertNuclStrToInt64(seq1,cb1)) {//convert to 2-bit format
+                if (convertNuclStrToInt64(seq1,cb1) < 0) {//convert to 2-bit format
                     cbWL.push_back(cb1);
                 } else {
                     pP->inOut->logMain << "WARNING: CB whitelist sequence contains non-ACGT base and is ignored: " << seq1 <<endl;
@@ -381,7 +382,7 @@ void ParametersSolo::initialize(Parameters *pPin)
             string seq1;
             while (cbWlStream >> seq1) {//cycle over one WL file
                 uint64 cb1;
-                if (!convertNuclStrToInt64(seq1,cb1)) {//convert to 2-bit format
+                if (convertNuclStrToInt64(seq1,cb1) >= 0) {//convert to 2-bit format
                     pP->inOut->logMain << "WARNING: CB whitelist sequence contains non-ACGT base and is ignored: " << seq1 <<endl;
                     continue;
                 };
@@ -406,7 +407,9 @@ void ParametersSolo::initialize(Parameters *pPin)
 
     //////////////////////////////////////////////////////////////SAM attributes
     samAttrYes=false;
-    if ( (pP->outSAMattrPresent.CB || pP->outSAMattrPresent.UB) && type!=SoloTypes::CB_samTagOut) {
+    if (type == SoloTypes::SeqScope) {
+        // Do nothing, sam attributes are added outside solo
+    } else if ( (pP->outSAMattrPresent.CB || pP->outSAMattrPresent.UB) && type!=SoloTypes::CB_samTagOut) {
         samAttrYes=true;
         if (!pP->outBAMcoord) {
             ostringstream errOut;
@@ -421,23 +424,26 @@ void ParametersSolo::initialize(Parameters *pPin)
 
     ////////////////////////////////////////////////////////////////readInfoYes: which feature is used to fill readInfo. Only one feature is allowed
     readInfoYes.fill(false);
-    if (featureYes[SoloFeatureTypes::VelocytoSimple] || featureYes[SoloFeatureTypes::Velocyto]) {//turn readInfo on for Gene needed by VelocytoSimple
-        readInfoYes[SoloFeatureTypes::Gene]=true;
-    };
-    samAttrFeature = featureFirst;
-    if (samAttrYes){//pSolo.samAttrFeature=0 by default, so need to check samAttrYes
-        if (   featureFirst == SoloFeatureTypes::Gene || featureFirst == SoloFeatureTypes::GeneFull ||
-               featureFirst == SoloFeatureTypes::GeneFull_Ex50pAS || featureFirst == SoloFeatureTypes::GeneFull_ExonOverIntron ) {
-            //all good
-        } else {
-            ostringstream errOut;
-            errOut << "EXITING because of fatal PARAMETERS error: CB and/or UB attributes in --outSAMattributes require --soloFeatures Gene OR/AND GeneFull OR/AND GeneFull_Ex50pAS.\n";
-            errOut << "SOLUTION: re-run STAR adding Gene AND/OR GeneFull OR/AND GeneFull_Ex50pAS OR/AND GeneFull_ExonOverIntron to --soloFeatures\n";
-            exitWithError(errOut.str(),std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
-        };
-        readInfoYes[samAttrFeature]=true;
-    };
+    if (type != SoloTypes::SeqScope) {
+        if (featureYes[SoloFeatureTypes::VelocytoSimple] || featureYes[SoloFeatureTypes::Velocyto]) {//turn readInfo on for Gene needed by VelocytoSimple
+            readInfoYes[SoloFeatureTypes::Gene]=true;
+        }
+        samAttrFeature = featureFirst;
+        if (samAttrYes) {//pSolo.samAttrFeature=0 by default, so need to check samAttrYes
+            if (   featureFirst == SoloFeatureTypes::Gene || featureFirst == SoloFeatureTypes::GeneFull ||
+                featureFirst == SoloFeatureTypes::GeneFull_Ex50pAS || featureFirst == SoloFeatureTypes::GeneFull_ExonOverIntron ) {
+                //all good
+            } else {
+                ostringstream errOut;
+                errOut << "EXITING because of fatal PARAMETERS error: CB and/or UB attributes in --outSAMattributes require --soloFeatures Gene OR/AND GeneFull OR/AND GeneFull_Ex50pAS.\n";
+                errOut << "SOLUTION: re-run STAR adding Gene AND/OR GeneFull OR/AND GeneFull_Ex50pAS OR/AND GeneFull_ExonOverIntron to --soloFeatures\n";
+                exitWithError(errOut.str(),std::cerr, pP->inOut->logMain, EXIT_CODE_PARAMETER, *pP);
+            };
+            readInfoYes[samAttrFeature]=true;
+        }
+    }
     readIndexYes = readInfoYes;
+
 
     /////////////////////////////////////////////////////////////////// readFlag output
     readStats.yes = false;
@@ -678,6 +684,9 @@ void MultiMappers::initialize(ParametersSolo* pS)
 ////////////////////////////////////////////////////
 void ParametersSolo::init_CBmatchWL()
 {//CBmatchWL
+    if (type==SoloTypes::SeqScope) {
+        return;
+    }
     bool incomp1 =        typeStr=="CB_UMI_Complex" && (CBmatchWL.type!="Exact" && CBmatchWL.type!="1MM" && CBmatchWL.type!="EditDist_2");
     incomp1 = incomp1 || (typeStr=="CB_samTagOut"   && (CBmatchWL.type!="Exact" && CBmatchWL.type!="1MM"));
     incomp1 = incomp1 || (typeStr!="CB_UMI_Complex" &&  CBmatchWL.type=="EditDist_2");

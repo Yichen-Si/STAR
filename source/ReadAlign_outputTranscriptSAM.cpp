@@ -326,30 +326,14 @@ uint ReadAlign::outputTranscriptSAM(Transcript const &trOut, uint nTrOut, uint i
                         *outStream<< "\tR2:Z:" <<Read0[1];
                     };
                     break;
-                case ATTR_CR:
-                    if (P.readTwoIsBarcode && P.cbS >= 0 && P.cbL > 0) {
-                        if ((int32) readLengthOriginal[1] < P.cbS+P.cbL) {
-                            break;
-                        }
-                        *outStream << "\tCR:Z:";
-                        outStream->write(Read0[1]+P.cbS, P.cbL);
-                    };
-                    break;
-                case ATTR_UR:
-                    if (P.readTwoIsBarcode && P.ubS >= 0 && P.ubL > 0) {
-                        if ((int32) readLengthOriginal[1] < P.ubS+P.ubL) {
-                            break;
-                        }
-                        *outStream<< "\tUR:Z:";
-                        outStream->write(Read0[1]+P.ubS, P.ubL);
-                    };
-                    break;
                 //do nothing - this attributes only work for BAM output
                 case ATTR_ch:
-                case ATTR_CB:
+                case ATTR_CR:
                 case ATTR_CY:
-                case ATTR_UB:
+                case ATTR_UR:
                 case ATTR_UY:
+                case ATTR_CB:
+                case ATTR_UB:
                 case ATTR_sM:
                 case ATTR_sS:
                 case ATTR_sQ:
@@ -367,21 +351,21 @@ uint ReadAlign::outputTranscriptSAM(Transcript const &trOut, uint nTrOut, uint i
                     exitWithError(errOut.str(), std::cerr, P.inOut->logMain, EXIT_CODE_PARAMETER, P);
             };
         };
-        if (P.cbErrorCorrection || P.cbAnnotation) {
-            char cb[P.cbL+1];
-            int32_t x, y;
-            int32_t nmiss = P.cbWL->query(Read0[1]+P.cbS, cb, x, y);
-            if (nmiss == 0 && !P.skipCBifExact) {
-                *outStream<< "\tCB:Z:";
-                outStream->write(Read0[1]+P.cbS, P.cbL);
-            } else if (nmiss > 0) {
-                *outStream<< "\tCB:Z:";
-                outStream->write(cb,P.cbL);
-            }
-            *outStream<< "\t" << P.crdTag << ":Z:" << x << "," << y;
+        // Output CR/UR/CB/SB as long as relevant info is provided // 2024UM
+        if (outputCR) {
+            *outStream << "\tCR:Z:";
+            outStream->write(Read0[1]+P.cbS, P.cbL);
         }
-
-
+        if (outputUR) {
+            *outStream<< "\tUR:Z:";
+            outStream->write(Read0[1]+P.ubS, P.ubL);
+        }
+        if (outputCB) {
+            *outStream<< "\tCB:Z:" << cbCorrected;
+        }
+        if (outputAnno) {
+            *outStream<< "\t" << P.crdTag << ":Z:" << cbInfo;
+        }
 
         if (P.readFilesTypeN==10 && !readNameExtra[imate].empty()) {//SAM files as input - output extra attributes
              *outStream << "\t" << readNameExtra.at(imate);

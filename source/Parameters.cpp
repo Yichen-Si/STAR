@@ -317,6 +317,7 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoScalar <uint32> (-1, -1, "wlIdxS", &wlIdxS));
     parArray.push_back(new ParameterInfoScalar <uint32> (-1, -1, "wlIdxX", &wlIdxX));
     parArray.push_back(new ParameterInfoScalar <uint32> (-1, -1, "wlIdxY", &wlIdxY));
+    parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "skipAlignUnmatchWL", &skipAlignUnmatchWL));
     ///////////////////////////////////////////////////////////////////////
 
     parameterInputName.push_back("Default");
@@ -788,23 +789,31 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
         exitWithError(errOut.str(), std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
     };
 
-    //read parameters
-    readFilesInit();
 
-    // White list handler
+    // White list handler // 2024UM
     cbErrorCorrection = false;
     cbAnnotation = false;
     if (cbWhitelist != "None") {
-        cbWL = std::make_shared<SbcdWL>(*this, cbL, kmerSize, cbExact, cbAllowAmbigRef, cbAllowAmbigQuery);
-        cbWL->loadWL(cbWhitelist.c_str(), wlIdxS, wlIdxX, wlIdxY);
+        if (crdTag.size() != 2 || !(cbS >= 0 && cbL > 0)) {
+            exitWithError("EXITING because of FATAL ERROR: crdTag must contain exactly two characters (" + crdTag + ")\n", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
+        }
         if (!cbExact) {
             cbErrorCorrection = true;
         }
-        if (crdTag.size() != 2) {
-            exitWithError("EXITING because of FATAL ERROR: crdTag must contain exactly two characters (" + crdTag + ")\n", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
-        }
         cbAnnotation = true;
     }
+    if (pSolo.typeStr == "SeqScope") {
+        readTwoIsBarcode = true;
+        // if (!outSAMbool) {
+        //     exitWithError("Currently --soloType SeqScope only supports SAM output", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
+        // }
+        if (!cbAnnotation || !(ubS >= 0 && ubL > 0)) {
+            exitWithError("Currently --soloType SeqScope requires spatial barcode white list with coordinates", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
+        }
+    }
+
+    //read parameters
+    readFilesInit();
 
     //two-pass
     if (parArray.at(twoPass.pass1readsN_par)->inputLevel>0  && twoPass.mode=="None") {

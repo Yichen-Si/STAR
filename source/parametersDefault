@@ -922,6 +922,8 @@ soloClusterCBfile           -
 ### 2024UM Experimental
 debug                   0
     int: debug mode
+skipAlignUnmatchWL      1
+    bool: whether to skip alignment for reads whose (spatial) barcodes do not find a match in the white list provided by --cbWhitelist
 readTwoIsBarcode        0
     bool: if the second fastx file contains only barcode
 

@@ -23,10 +23,13 @@ private:
 public:
 
     BcdMatch<uint64_t> bcd_match;
+    std::unordered_map<uint64_t, uint64_t> val_idx_map;
+    uint64_t n_uniq_val;
 	int32_t bcd_len, kmer_size;
     int32_t max_mismatch = 1;
 	std::string crd_tag, bcd_tag, bcd_tag_org;
     bool active = false;
+    bool unique_value_map = false;
     char bcd_tag_c[2], crd_tag_c[2], bcd_tag_org_c[2];
 
     SbcdWL(Parameters& _P) : P(_P) {}
@@ -43,7 +46,7 @@ public:
         fields = NULL;
         active = true;
     }
-    int32_t loadWL(const char* filename, uint32_t _icol_s, uint32_t _icol_x, uint32_t _icol_y);
+    int32_t loadWL(const char* filename, uint32_t _icol_s, uint32_t _icol_x, uint32_t _icol_y, bool _list_val = false);
     int32_t query(const char* seq, char* cb, int32_t& x, int32_t& y);
 
 };

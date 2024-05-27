@@ -9,10 +9,10 @@ SoloReadFeature::SoloReadFeature(int32 feTy, Parameters &Pin, int iChunk)
         return;
 //     if (pSolo.type==pSolo.SoloTypes::CB_samTagOut)
 //         return;
-    
+
     readInfoYes = pSolo.readInfoYes[featureType];
     readIndexYes = pSolo.readIndexYes[featureType];
-    
+
     if (pSolo.cbWLyes) {
         cbReadCount.resize(pSolo.cbWLsize,0);
     };
@@ -21,7 +21,7 @@ SoloReadFeature::SoloReadFeature(int32 feTy, Parameters &Pin, int iChunk)
         //open with flagDelete=false, i.e. try to keep file if it exists
         streamReads = &fstrOpen(P.outFileTmp+"/solo"+SoloFeatureTypes::Names[featureType]+'_'+std::to_string(iChunk), ERROR_OUT, P, false);
     };
-    
+
     if (featureType==SoloFeatureTypes::Transcript3p)
         transcriptDistCount.resize(10000,0);
 };
@@ -37,7 +37,7 @@ void SoloReadFeature::addCounts(const SoloReadFeature &rfIn)
             cbReadCountMap[ii->first] += ii->second;
         };
     };
-    
+
     if (transcriptDistCount.size()>0) {
         for (uint32 ii=0; ii<transcriptDistCount.size(); ii++)
             transcriptDistCount[ii] += rfIn.transcriptDistCount[ii];

@@ -3,18 +3,18 @@
 #include "ErrorWarning.h"
 
 void ReadAlign::outputAlignments() {
-  
+
     outBAMbytes=0;
-        
+
     readAnnot.reset();
-    
+
     if (mapGen.pGe.gType==101) {//temporary
         ReadAlign::spliceGraphWriteSAM();
         return;
-    };    
+    };
 
     ReadAlign::outFilterBySJout();//sets outFilterBySJoutPass=false if read is held for the 2nd stage of outFilterBySJout
-    
+
     if (outFilterBySJoutPass) {//otherwise align is held for the 2nd stage of outFilterBySJout
         ////////////////////////////////////
         if (unmapType<0) {//passed mappedFilter. Unmapped reads can have nTr>0
@@ -39,13 +39,20 @@ void ReadAlign::outputAlignments() {
                 ReadAlign::recordSJ(alignsGenOut.alN, alignsGenOut.alMult, chunkOutSJ);
             } else {
                 ReadAlign::recordSJ(nTr, trMult, chunkOutSJ); //this will set mateMapped
-            };            
-            
+            };
             ReadAlign::alignedAnnotation();
         };
 
         //the operations below are both for mapped and unmapped reads
-        soloRead->readBar->getCBandUMI(Read0, Qual0, readLengthOriginal, readNameExtra[0], readFilesIndex, readName);
+        if (seqScope) { // 2024UM
+            // Match SoloReadBarcode::getCBandUMI's output when there is no WL
+            soloRead->readBar->cbMatch = cbMatch;
+            soloRead->readBar->umiB = umint4;
+            soloRead->readBar->cbMatchString = std::to_string(sb);
+            soloRead->readBar->cbMatchInd = vector<uint64>{sb};
+        } else {
+            soloRead->readBar->getCBandUMI(Read0, Qual0, readLengthOriginal, readNameExtra[0], readFilesIndex, readName);
+        }
 
         //transcripts: need to be run after CB/UMI are obtained to output CR/UR tags
         if ( P.quant.trSAM.yes && unmapType<0) {//Aligned.toTranscriptome output, only for mapped
@@ -54,8 +61,7 @@ void ReadAlign::outputAlignments() {
             } else {
                 quantTranscriptome(chunkTr, nTr, trMult,  alignTrAll);
             };
-        };        
-        
+        };
         soloRead->record((unmapType<0 ? nTr : 0), trMult, iReadAll, readAnnot); //need to supply nTr=0 for unmapped reads
 
         if (P.pGe.transform.outSAM) {
@@ -63,12 +69,12 @@ void ReadAlign::outputAlignments() {
         } else {
             ReadAlign::writeSAM(nTr, trMult, trBest); //this will set mateMapped
         };
-    };    
+    };
 
     if (unmapType>=0) {//unmapped reads
         statsRA.unmappedAll++; //include unmapType==4, i.e. one-mate alignments of PE reads - which may have been set in writeSAM above
         ReadAlign::outReadsUnmapped(); //uses mateMapped that was set in writeSAM above
-    };    
+    };
 };
 
 
@@ -77,7 +83,7 @@ void ReadAlign::recordSJ(uint64 nTrO, Transcript **trO, OutSJ *cSJ)
 {//junction output for mapped reads (i.e. passed BySJout filtering)
     if (!P.outSJ.yes)
         return; //no SJ output
-    
+
     if ( P.outSJfilterReads=="All" || nTrO==1 ) {
         uint64 sjReadStartN=cSJ->N;
         for (uint64 iTr=0; iTr<nTrO; iTr++) {//write all transcripts junctions
@@ -90,10 +96,10 @@ void ReadAlign::recordSJ(uint64 nTrO, Transcript **trO, OutSJ *cSJ)
 void ReadAlign::outFilterBySJout()
 {//filtering by SJout
     outFilterBySJoutPass=true;//only false if the alignment is held for outFilterBySJoutStage. True even if unmapped
-    
+
     if (unmapType>0 || P.outFilterBySJoutStage!=1)
         return; //unmapped, or 2nd stage
-   
+
     for (uint iTr=0;iTr<nTr;iTr++) {//check transcript for unannotated junctions
         for (uint iex=0;iex<trMult[iTr]->nExons-1;iex++) {//check all junctions
             if (trMult[iTr]->canonSJ[iex]>=0 && trMult[iTr]->sjAnnot[iex]==0) {
@@ -101,10 +107,10 @@ void ReadAlign::outFilterBySJout()
                 break;
             };
         };
-        if (!outFilterBySJoutPass) 
+        if (!outFilterBySJoutPass)
             break;
     };
-    
+
     if (!outFilterBySJoutPass) {//this read is held for further filtering BySJout, record fastq
         unmapType=-3; //the read is not conisdered mapped
         statsRA.readN--;
@@ -122,10 +128,10 @@ void ReadAlign::outFilterBySJout()
             };
         };
     };
-    
+
     //SJ output for all reads, including those not passed bySJout filtering. This only needs to be at the 1st stage of BySJout filtering
     ReadAlign::recordSJ(nTr, trMult, chunkOutSJ1); //this will set mateMapped
-         
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +141,7 @@ void ReadAlign::writeSAM(uint64 nTrOutSAM, Transcript **trOutSAM, Transcript *tr
     mateMapped[0] = mateMapped[1] = false; //mateMapped = are mates present in any of the transcripts?
 
     if (unmapType < 0 && outFilterBySJoutPass) {//write to SAM/BAM
-        
+
         //////////////////////////////////////////////////////////////////////////////////
         /////////////outSAMfilter
         if (P.outSAMfilter.yes) {
@@ -162,11 +168,11 @@ void ReadAlign::writeSAM(uint64 nTrOutSAM, Transcript **trOutSAM, Transcript *tr
                 nTrOutSAM = nTrOutSAM1;
             };
         };
-        
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////// write SAM/BAM 
-        auto nTrOutWrite=min(P.outSAMmultNmax,nTrOutSAM); //number of aligns to write to SAM/BAM files            
-        
+        ////// write SAM/BAM
+        auto nTrOutWrite=min(P.outSAMmultNmax,nTrOutSAM); //number of aligns to write to SAM/BAM files
+
         for (uint iTr=0;iTr<nTrOutWrite;iTr++) {//write transcripts
             //mateMapped1 = true if a mate is present in this transcript
             bool mateMapped1[2]={false,false};
@@ -229,8 +235,8 @@ void ReadAlign::writeSAM(uint64 nTrOutSAM, Transcript **trOutSAM, Transcript *tr
                     };
                 };
             };
-        };  
-        
+        };
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////write completely unmapped
     } else if (unmapType>=0 && P.outSAMunmapped.within) {//output unmapped within && unmapped read && both mates unmapped
@@ -252,7 +258,7 @@ void ReadAlign::writeSAM(uint64 nTrOutSAM, Transcript **trOutSAM, Transcript *tr
         if (P.outSAMbool) {//output SAM
             outBAMbytes+= outputTranscriptSAM(*trBestSAM, 0, 0, (uint) -1, (uint) -1, 0, unmapType, mateMapped, outSAMstream);
         };
-    };       
+    };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -290,7 +296,7 @@ void ReadAlign::spliceGraphWriteSAM()
         nTrOutSAM=nTrOutSAM;
     };
 
-    for (uint iTr=0; iTr<nTrOutSAM; iTr++) {//write all transcripts            
+    for (uint iTr=0; iTr<nTrOutSAM; iTr++) {//write all transcripts
         outBAMbytes += outputSpliceGraphSAM(*(trMult[iTr]), nTrOutSAM, iTr, outSAMstream);
     };
 };
@@ -304,12 +310,12 @@ void ReadAlign::alignedAnnotation()
             chunkTr->geneCountsAddAlign(alignsGenOut.alN, alignsGenOut.alMult, readAnnot.geneExonOverlap);
         } else {
             chunkTr->geneCountsAddAlign(nTr, trMult, readAnnot.geneExonOverlap);
-        };        
+        };
     };
     //solo-GeneFull
     if ( P.quant.geneFull.yes ) {
         chunkTr->geneFullAlignOverlap(nTr, trMult, P.pSolo.strand, readAnnot.annotFeatures[SoloFeatureTypes::GeneFull]);
-    };   
+    };
     //solo-Gene
     if ( P.quant.gene.yes ) {
         chunkTr->classifyAlign(trMult, nTr, readAnnot);
@@ -321,5 +327,5 @@ void ReadAlign::alignedAnnotation()
     //solo-GeneFull_Ex50pAS
     if ( P.quant.geneFull_Ex50pAS.yes ) {
         chunkTr->alignExonOverlap(nTr, trMult, P.pSolo.strand, readAnnot.annotFeatures[SoloFeatureTypes::GeneFull_Ex50pAS]);
-    };    
+    };
 };
