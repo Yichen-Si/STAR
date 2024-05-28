@@ -81,7 +81,6 @@ int ReadAlign::oneRead() {//process one read: load, map, write
             cbMatch = -11;
             return 2; // Wrong length, should not happen
         }
-        outputCR = 1;
         char cb[P.cbL+1];
         int32_t x, y;
         cbMatch = cbWL->query(Read0[1]+P.cbS, cb, x, y);
@@ -108,7 +107,6 @@ int ReadAlign::oneRead() {//process one read: load, map, write
             cbMatch = -11;
             return 2; // Wrong length, should not happen
         }
-        outputUR = 1;
         std::vector<uint8_t> nonACGTs;
         umint4 = seq2bits2(Read0[1]+P.ubS, P.ubL, nonACGTs);
         umiAmbig = nonACGTs.size(); // We could allow ambiguous bases in UMI, but STARsolo does not

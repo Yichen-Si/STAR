@@ -17,6 +17,15 @@ ReadAlignChunk::ReadAlignChunk(Parameters& Pin, Genome &genomeIn, Transcriptome 
 
     RA->iRead=0;
 
+    if (P.readTwoIsBarcode) {
+        if (P.cbS >= 0 && P.cbL > 0) {
+            RA->outputCR = 1;
+        }
+        if (P.ubS >= 0 && P.ubL > 0) {
+            RA->outputUR = 1;
+        }
+    }
+
     chunkIn=new char* [P.readNends];
     readInStream=new istringstream* [P.readNends];
 

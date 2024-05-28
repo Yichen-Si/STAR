@@ -804,9 +804,9 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     }
     if (pSolo.typeStr == "SeqScope") {
         readTwoIsBarcode = true;
-        // if (!outSAMbool) {
-        //     exitWithError("Currently --soloType SeqScope only supports SAM output", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
-        // }
+        if (!outSAMbool) {
+            exitWithError("Currently --soloType SeqScope only supports SAM output", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
+        }
         if (!cbAnnotation || !(ubS >= 0 && ubL > 0)) {
             exitWithError("Currently --soloType SeqScope requires spatial barcode white list with coordinates", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
         }
