@@ -2,6 +2,7 @@
 *.d
 Depend.list
 
+.vscode/
 .project
 .kdev4/
 source.kdev4

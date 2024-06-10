@@ -70,12 +70,16 @@ int ReadAlign::oneRead() {//process one read: load, map, write
         Read1[2][Lread-ii-1]=Read1[1][ii];
     };
 
+    statsRA.readN++;
+    statsRA.readBases += readLength[0]+readLength[1];
+
     // Process identifiers (for solo counting)
     // Could be more general // 2024UM
     if (seqScope) {
         cbMatch = -1;
         outputCB = 0;
         outputAnno = 0;
+        sb = (uint64_t) - 1;
         // spatial barcode
         if ((int32) readLengthOriginal[1] < P.cbS+P.cbL) {
             cbMatch = -11;
@@ -125,9 +129,6 @@ int ReadAlign::oneRead() {//process one read: load, map, write
         soloRead->readBar->addStats(cbMatch);
     }
 
-    statsRA.readN++;
-    statsRA.readBases += readLength[0]+readLength[1];
-
     //max number of mismatches allowed for this read
     outFilterMismatchNmaxTotal=min(P.outFilterMismatchNmax, (uint) (P.outFilterMismatchNoverReadLmax*(readLength[0]+readLength[1])));
 
@@ -137,7 +138,6 @@ int ReadAlign::oneRead() {//process one read: load, map, write
     } else {//all other cases - standard alignment algorithm
         mapOneRead();
     };
-
     peOverlapMergeMap();
 
     multMapSelect();
@@ -163,7 +163,6 @@ int ReadAlign::oneRead() {//process one read: load, map, write
 
     //write out alignments
     outputAlignments();
-
     {
     #ifdef DEBUG_OutputLastRead
         lastReadStream.seekp(ios::beg);

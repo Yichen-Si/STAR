@@ -214,6 +214,8 @@ if (P.debug != 999) {
     if (P.runRestart.type != 1)
         mapThreadsSpawn(P, RAchunk);
 
+    *P.inOut->logStdOut << "Completed stage 1 mapping\n" << std::flush;
+
     if (P.outFilterBySJoutStage == 1)
     { // completed stage 1, go to stage 2
         P.inOut->logMain << "Completed stage 1 mapping of outFilterBySJout mapping\n"
@@ -265,24 +267,49 @@ if (P.debug != 999) {
     }
 
 if (P.pSolo.type == P.pSolo.SoloTypes::SeqScope) {
-    std::unordered_map<uint64, uint32_t*> sbCounts;
+    *(P.inOut->logStdOut) << timeMonthDayTime() << " ..... started output count by spatial location\n" << std::flush;
+    std::unordered_map<uint64, std::pair<std::set<uint64_t>, uint32_t*> > sbCounts;
     for (int ii = 0; ii < P.runThreadN; ii++) {
-        for (auto& kv : RAchunk[ii]->RA->featureCounts) {
-            auto insertPair = sbCounts.emplace(kv.first, new uint32_t[6]{0});
-            for (int jj = 0; jj < 6; jj++) {
-                insertPair.first->second[jj] += kv.second[jj];
+        for (auto& kv : RAchunk[ii]->RA->sbUmiFlag) {
+            uint32_t* cvec = nullptr;
+            auto insertPair = sbCounts.emplace(kv.first.first, std::make_pair(std::set<uint64_t>{kv.first.second}, new uint32_t[6]{0}));
+            if (!insertPair.second) { // SB exists
+                auto insertSet = insertPair.first->second.first.emplace(kv.first.second);
+                if (insertSet.second) { // new UMI
+                    cvec = insertPair.first->second.second;
+                }
+            } else { // new SB
+                cvec = insertPair.first->second.second;
+            }
+            if (cvec != nullptr) {
+                cvec[0]++; // nTotal
+                if (kv.second) {
+                    cvec[1]++; // nGenome
+                    if (kv.second & 0x2) {
+                        cvec[2]++; // nUniqGenome
+                    }
+                    if (kv.second & 0x4) {
+                        cvec[3]++; // nUniqIntergenic
+                    }
+                    if (kv.second & 0x8) {
+                        cvec[4]++; // nUniqExonic
+                    }
+                    if (kv.second & 0x10) {
+                        cvec[5]++; // nUniqIntronic
+                    }
+                }
             }
         }
     }
-    std::ofstream sbOut((P.outFileNamePrefix + "SB.marginal.ct.tsv").c_str());
+    std::ofstream sbOut((P.outFileNamePrefix + "SB.marginal.umi.ct.tsv").c_str());
     sbOut << "X\tY\tnTotal\tnGenome\tnUniqGenome\tnUniqIntergenic\tnUniqExonic\tnUniqIntronic\n";
     for (auto& kv : sbCounts) {
         sbOut << (kv.first >> 32) << "\t" << (kv.first & 0xFFFFFFFF) << "\t";
         for (int jj = 0; jj < 6; jj++) {
-            sbOut << kv.second[jj] << "\t";
+            sbOut << kv.second.second[jj] << "\t";
         }
         sbOut << "\n";
-        delete[] kv.second;
+        delete[] kv.second.second;
     }
     sbOut.close();
 }

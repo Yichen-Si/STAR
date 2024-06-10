@@ -31,21 +31,16 @@ void ReadAlignChunk::mapChunk() {//map one chunk. Input reads stream has to be s
 
         readStatus=RA->oneRead(); //map one read
 
-if (P.debug) {
-    if (readStatus==0 && RA->iRead % ((int32) (P.debug/5)) == 0) {
-        std::cerr << "Debug " << RA->iRead << std::endl << std::flush;
-    }
-    if (readStatus==0 && (int32) RA->iRead > P.debug) {
-        std::cerr << "Debug, end early " << RA->iRead << std::endl << std::flush;
-        readStatus = -1;
-        noReadsLeft = 1;
-    }
-    // if (RA->seqScope && RA->cbMatch != 0) {
-    //     std::cerr << "Debug " << RA->iRead << " cbMatch " << RA->cbMatch << std::endl << std::flush;
-    // } else if (!RA->seqScope && RA->soloRead->readBar->cbMatch != 0) {
-    //     std::cerr << "Debug " << RA->iRead << " cbMatch " << RA->soloRead->readBar->cbMatch << std::endl << std::flush;
-    // }
-}
+        if (P.debug) {
+            if (readStatus==0 && RA->iRead % ((int32) (P.debug/5)) == 0) {
+                std::cout << "Debug " << RA->iRead << std::endl << std::flush;
+            }
+            if (readStatus==0 && (int32) RA->iRead > P.debug) {
+                std::cout << "Debug, end early " << RA->iRead << std::endl << std::flush;
+                readStatus = -1;
+                noReadsLeft = 1;
+            }
+        }
         if (readStatus == 2) { // Error in parsing the barcode
             ostringstream errOut;
             errOut <<"EXITING because of fatal error: read length is shorter than specified barcode lenths to read\n";
@@ -130,6 +125,10 @@ if (P.debug) {
         };
 
     }; //reads cycle
+
+    if (P.debug) {
+        std::cout << "Finish mapChunk main cycle " << iThread << " " << RA->iRead << std::endl << std::flush;
+    }
 
     if ( P.outSAMbool && P.outSAMorder == "PairedKeepInputOrder" && P.runThreadN>1 ) {//write the remaining part of the buffer, close and rename chunk files
         chunkOutBAMfile.write(chunkOutBAM,chunkOutBAMtotal);

@@ -20,6 +20,14 @@
 #include <time.h>
 #include <random>
 
+struct pair_hash {
+    std::size_t operator() (const std::pair<uint64_t, uint64_t>& pair) const {
+        auto hash1 = std::hash<uint64_t>{}(pair.first);
+        auto hash2 = std::hash<uint64_t>{}(pair.second);
+        return hash1 ^ (hash2 << 1);
+    }
+};
+
 class ReadAlign {
     public:
         ReadAlign (Parameters& Pin, Genome &genomeIn, Transcriptome *TrIn, int iChunk, std::shared_ptr<SbcdWL> _cbWL = nullptr);//allocate arrays
@@ -40,7 +48,7 @@ class ReadAlign {
         bool outputCR, outputUR, outputCB, outputAnno;
         uint64 homopolymer[4];
         bool umiHomopoly;
-        std::unordered_map<uint64, uint32_t*> featureCounts; // marginal count per spatial position
+        std::unordered_map<std::pair<uint64, uint64>, uint8_t, pair_hash> sbUmiFlag;
         uint8_t mapFlag;
 
         Stats statsRA; //mapping statistics

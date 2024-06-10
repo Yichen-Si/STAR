@@ -198,15 +198,16 @@ void Transcriptome::classifyAlign (Transcript **alignG, uint64 nAlignG, ReadAnno
 
         //check if this alignment overlap with any transcript region
         uint32 tr0 = binarySearch1a<uint>(aG.gStart + aG.gLength, trS, nTr);
-        ++tr0;
-        do {
-            --tr0;
-            if (trE[tr0] >= aG.gStart) {
-                ovlpTranscriptome = true;
-                break;
-            }
-        } while (trEmax[tr0] >= aG.gStart && tr0 > 0);
-
+        if (tr0 < (uint32) -1) {
+            ++tr0;
+            do {
+                --tr0;
+                if (trE[tr0] >= aG.gStart) {
+                    ovlpTranscriptome = true;
+                    break;
+                }
+            } while (trEmax[tr0] >= aG.gStart && tr0 > 0);
+        }
 
         //binary search through transcript starts
         uint32 tr1=binarySearch1a<uint>(aG.exons[0][EX_G], trS, nTr);//tr1 has the maximum transcript start such that it is still <= align start
@@ -224,12 +225,6 @@ void Transcriptome::classifyAlign (Transcript **alignG, uint64 nAlignG, ReadAnno
 
             array<uint32, 2> distTrEnds;
             int aStatus=alignToTranscript(aG, trS[tr1], trExN[tr1], exSE+2*trExI[tr1], exLenCum+trExI[tr1], distTrEnds);
-            if (aStatus < 4) {
-                ovlpTranscriptome = true;
-                if (aStatus < 3) {
-                    ovlpIntron=true;
-                }
-            }
             if (aStatus==AlignVsTranscript::Concordant) {//align conforms with the transcript (fully exon)
 
                 //debug
@@ -275,6 +270,9 @@ void Transcriptome::classifyAlign (Transcript **alignG, uint64 nAlignG, ReadAnno
                 };
                 readAnnot.trVelocytoType.push_back({tr1, reAnn1});
             };
+            if (aStatus==AlignVsTranscript::ExonIntronSpan || aStatus==AlignVsTranscript::Intron) {
+                ovlpIntron=true;
+            }
         } while (trEmax[tr1]>=aGend && tr1>0);
     };
     if (!ovlpTranscriptome) {

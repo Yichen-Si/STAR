@@ -47,28 +47,16 @@ void ReadAlign::outputAlignments() {
         //the operations below are both for mapped and unmapped reads
         if (seqScope) { // 2024UM
             // Match SoloReadBarcode::getCBandUMI's output when there is no WL
+            if (unmapType < 0) {
+                umint4 |= (uint64) (trMult[0]->gStart / 1000) << std::min(48, 2*P.ubL);
+            }
             soloRead->readBar->cbMatch = cbMatch;
             soloRead->readBar->umiB = umint4;
             soloRead->readBar->cbMatchString = std::to_string(sb);
             soloRead->readBar->cbMatchInd = vector<uint64>{sb};
             // Record mapping status per spatial coordinate
-            auto insertPair = featureCounts.emplace(sb, new uint32_t[6]{0});
-            auto& cvec = insertPair.first->second;
-            cvec[0]++; // total
-            if (mapFlag) { // mapped
-                cvec[1]++;
-                if (mapFlag & 2) { // unique
-                    cvec[2]++;
-                    if (mapFlag & 4) { // intergenic
-                        cvec[3]++;
-                    }
-                    if (mapFlag & 8) { // exonic
-                        cvec[4]++;
-                    }
-                    if (mapFlag & 16) { // intronic
-                        cvec[5]++;
-                    }
-                }
+            if (cbMatch >= 0 && cbMatch <= 1) {
+                sbUmiFlag.emplace(std::make_pair(sb, umint4), mapFlag);
             }
         } else {
             soloRead->readBar->getCBandUMI(Read0, Qual0, readLengthOriginal, readNameExtra[0], readFilesIndex, readName);
