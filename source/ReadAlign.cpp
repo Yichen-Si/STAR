@@ -185,6 +185,11 @@ ReadAlign::~ReadAlign() {
             delete [] seedChain;
         #endif
     };
+    if (seqScope) {
+        for (auto& ptr : featureCounts) {
+            delete [] ptr.second;
+        }
+    }
 
 };
 

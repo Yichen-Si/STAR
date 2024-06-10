@@ -40,6 +40,8 @@ class ReadAlign {
         bool outputCR, outputUR, outputCB, outputAnno;
         uint64 homopolymer[4];
         bool umiHomopoly;
+        std::unordered_map<uint64, uint32_t*> featureCounts; // marginal count per spatial position
+        uint8_t mapFlag;
 
         Stats statsRA; //mapping statistics
 
@@ -157,7 +159,7 @@ class ReadAlign {
         uiWC *WC; //windows coordinates
         uiWA **WA; //aligments per window
 
-        int unmapType; //marker for why a read is unmapped
+        int unmapType; //marker for why a read is unmapped (0=other, 1=short, 2=mismatch, 3=multi)
 
         uint mapMarker; //alignment marker (typically, if there is something wrong)
         uint nA, nP, nWall, nUM[2]; //number of all alignments,  pieces, windows, U/M,

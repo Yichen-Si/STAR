@@ -6,7 +6,7 @@
 
 # or these user-set flags that will be added to standard flags
 LDFLAGSextra ?=
-CXXFLAGSextra ?=
+CXXFLAGSextra ?= -Wno-char-subscripts
 
 # user may define the compiler
 CXX ?= g++

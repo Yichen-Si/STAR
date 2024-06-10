@@ -7,6 +7,7 @@ void ReadAlign::outputAlignments() {
     outBAMbytes=0;
 
     readAnnot.reset();
+    mapFlag = 0;
 
     if (mapGen.pGe.gType==101) {//temporary
         ReadAlign::spliceGraphWriteSAM();
@@ -50,6 +51,25 @@ void ReadAlign::outputAlignments() {
             soloRead->readBar->umiB = umint4;
             soloRead->readBar->cbMatchString = std::to_string(sb);
             soloRead->readBar->cbMatchInd = vector<uint64>{sb};
+            // Record mapping status per spatial coordinate
+            auto insertPair = featureCounts.emplace(sb, new uint32_t[6]{0});
+            auto& cvec = insertPair.first->second;
+            cvec[0]++; // total
+            if (mapFlag) { // mapped
+                cvec[1]++;
+                if (mapFlag & 2) { // unique
+                    cvec[2]++;
+                    if (mapFlag & 4) { // intergenic
+                        cvec[3]++;
+                    }
+                    if (mapFlag & 8) { // exonic
+                        cvec[4]++;
+                    }
+                    if (mapFlag & 16) { // intronic
+                        cvec[5]++;
+                    }
+                }
+            }
         } else {
             soloRead->readBar->getCBandUMI(Read0, Qual0, readLengthOriginal, readNameExtra[0], readFilesIndex, readName);
         }
@@ -317,7 +337,7 @@ void ReadAlign::alignedAnnotation()
         chunkTr->geneFullAlignOverlap(nTr, trMult, P.pSolo.strand, readAnnot.annotFeatures[SoloFeatureTypes::GeneFull]);
     };
     //solo-Gene
-    if ( P.quant.gene.yes ) {
+    if ( P.quant.gene.yes || seqScope) {
         chunkTr->classifyAlign(trMult, nTr, readAnnot);
     };
     //solo-GeneFull_ExonOverIntron
@@ -328,4 +348,20 @@ void ReadAlign::alignedAnnotation()
     if ( P.quant.geneFull_Ex50pAS.yes ) {
         chunkTr->alignExonOverlap(nTr, trMult, P.pSolo.strand, readAnnot.annotFeatures[SoloFeatureTypes::GeneFull_Ex50pAS]);
     };
+
+    if (seqScope) {
+        mapFlag = (uint8_t) 1; // mapped to genome
+        if (nTr > 1) {
+            return;
+        }
+        ReadAnnotFeature &annFeat = readAnnot.annotFeatures[SoloFeatureTypes::Gene];
+        mapFlag |= (uint8_t) 2; // uniquely mapped
+        if (annFeat.ovType == ReadAnnotFeature::overlapTypes::intergenic) {
+            mapFlag |= (uint8_t) 4; // unique && intergenic
+        } else if (annFeat.ovType == ReadAnnotFeature::overlapTypes::exonic) {
+            mapFlag |= (uint8_t) 8; // unique && purely exonic (for at least one transcript)
+        } else if (annFeat.ovType == ReadAnnotFeature::overlapTypes::intronic) {
+            mapFlag |= (uint8_t) 16; // unique && ovlp intron (for at least one transcript)
+        }
+    }
 };

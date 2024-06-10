@@ -263,8 +263,31 @@ if (P.debug != 999) {
     if (P.runRestart.type != 1 && P.outSJ.yes) {
         outputSJ(RAchunk, P);
     }
-    // solo counts
 
+if (P.pSolo.type == P.pSolo.SoloTypes::SeqScope) {
+    std::unordered_map<uint64, uint32_t*> sbCounts;
+    for (int ii = 0; ii < P.runThreadN; ii++) {
+        for (auto& kv : RAchunk[ii]->RA->featureCounts) {
+            auto insertPair = sbCounts.emplace(kv.first, new uint32_t[6]{0});
+            for (int jj = 0; jj < 6; jj++) {
+                insertPair.first->second[jj] += kv.second[jj];
+            }
+        }
+    }
+    std::ofstream sbOut((P.outFileNamePrefix + "SB.marginal.ct.tsv").c_str());
+    sbOut << "X\tY\tnTotal\tnGenome\tnUniqGenome\tnUniqIntergenic\tnUniqExonic\tnUniqIntronic\n";
+    for (auto& kv : sbCounts) {
+        sbOut << (kv.first >> 32) << "\t" << (kv.first & 0xFFFFFFFF) << "\t";
+        for (int jj = 0; jj < 6; jj++) {
+            sbOut << kv.second[jj] << "\t";
+        }
+        sbOut << "\n";
+        delete[] kv.second;
+    }
+    sbOut.close();
+}
+
+    // solo counts
 if (P.debug % 10 != 2) {
 
     Solo soloMain(RAchunk, P, *RAchunk[0]->chunkTr, cbWL);

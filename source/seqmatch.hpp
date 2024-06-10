@@ -26,6 +26,7 @@ void BcdMatch<T>::init(uint32_t _bcd_len, uint32_t _k, bool _exact, bool _ar, bo
         kmer_size = bcd_len;
     }
     if (exact_only) {
+        npattern = 0;
         allow_ambig_ref = false;
         allow_ambig_query = false;
     } else {

@@ -142,7 +142,7 @@ int ReadAlign::oneRead() {//process one read: load, map, write
 
     multMapSelect();
 
-    mappedFilter();
+    mappedFilter(); // assign unmapType and add to statsRA
 
     transformGenome();//for now genome transformation happens after multimapper selection, and mapping filter
 
