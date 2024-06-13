@@ -361,7 +361,7 @@ class Parameters {
         bool readTwoIsBarcode;
         int32 cbS, cbL, ubS, ubL, kmerSize;
         // White list input
-        std::string cbWhitelist;
+        std::vector<std::string> cbWhitelist;
         uint32 wlIdxS, wlIdxX, wlIdxY;
         // New white list & spatial coordinate handler
         bool cbExact, cbAllowAmbigRef, cbAllowAmbigQuery;

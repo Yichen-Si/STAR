@@ -1,6 +1,6 @@
 #include "sbcdWL.h"
 
-int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, uint32_t icol_y, bool _list_val) {
+int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, uint32_t icol_y, bool _list_val, bool _process_ambig) {
     if (!active) {
         return 0;
     }
@@ -18,9 +18,7 @@ int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, u
     if (nfields < min_fields) {
         exitWithError("Error: Column indices must be from 0 to ncol - 1", std::cerr, P.inOut->logMain, EXIT_CODE_PARAMETER, P);
     }
-
-    uint64_t ref_tot = 0, ref_ambig = 0, ref_skip = 0;
-    n_uniq_val = 0;
+    P.inOut->logMain << "Reading white list from " << filename << std::endl << std::flush;
     while(true) {
         ref_tot++;
         if (ref_tot % 500000 == 0) {
@@ -50,11 +48,23 @@ int32_t SbcdWL::loadWL(const char* filename, uint32_t icol_s, uint32_t icol_x, u
         }
         if (P.debug % 3 == 1 && ref_tot > 500000) {break;}
     }
-    bcd_match.process_ambig_ref();
-    P.inOut->logProgress << "Read white list with " << ref_tot << " record including " << ref_ambig << " with one ambiguous base, skipped " << ref_skip << std::endl << std::flush;
+    hts_close(hp);
+    if (_process_ambig) {
+        bcd_match.process_ambig_ref();
+    }
+    P.inOut->logMain << "Read " << ref_tot << " record including " << ref_ambig << " with one ambiguous base, skipped " << ref_skip << std::endl << std::flush;
     return 1;
 }
 
+int32_t SbcdWL::loadWL(std::vector<std::string>& filenames, uint32_t icol_s, uint32_t icol_x, uint32_t icol_y, bool _list_val) {
+    for (auto& filename : filenames) {
+        if (loadWL(filename.c_str(), icol_s, icol_x, icol_y, _list_val, false) <= 0) {
+            return 0;
+        }
+    }
+    bcd_match.process_ambig_ref();
+    return 1;
+}
 
 int32_t SbcdWL::query(const char* seq, char* cb, int32_t& x, int32_t& y) {
     if (!active) {

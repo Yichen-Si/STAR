@@ -180,12 +180,12 @@ if (P.debug != 999) {
 
     // Initialize barcode white list // 2024UM
     std::shared_ptr<SbcdWL> cbWL = nullptr;
-    if (P.cbWhitelist != "None") {
+    if (P.cbWhitelist.size() > 0) {
         time(&g_statsAll.timeStartMap);
         *P.inOut->logStdOut << timeMonthDayTime(g_statsAll.timeStartMap) << " ..... initializing spatial barcode reference\n" << flush;
 
         cbWL = std::make_shared<SbcdWL>(P, P.cbL, P.kmerSize, P.cbExact, P. cbAllowAmbigRef, P.cbAllowAmbigQuery);
-        cbWL->loadWL(P.cbWhitelist.c_str(), P.wlIdxS, P.wlIdxX, P.wlIdxY, P.pSolo.type == P.pSolo.SoloTypes::SeqScope);
+        cbWL->loadWL(P.cbWhitelist, P.wlIdxS, P.wlIdxX, P.wlIdxY, P.pSolo.type == P.pSolo.SoloTypes::SeqScope);
 
         time(&g_statsAll.timeStartMap);
         *P.inOut->logStdOut << timeMonthDayTime(g_statsAll.timeStartMap) << " ..... finished constructing spatial barcode reference\n" << flush;
@@ -266,6 +266,7 @@ if (P.debug != 999) {
         outputSJ(RAchunk, P);
     }
 
+// Output marginal molecule counts by spatial location // 2024UM
 if (P.pSolo.type == P.pSolo.SoloTypes::SeqScope) {
     *(P.inOut->logStdOut) << timeMonthDayTime() << " ..... started output count by spatial location\n" << std::flush;
     std::unordered_map<uint64, std::pair<std::set<uint64_t>, uint32_t*> > sbCounts;
@@ -302,7 +303,7 @@ if (P.pSolo.type == P.pSolo.SoloTypes::SeqScope) {
         }
     }
     std::ofstream sbOut((P.outFileNamePrefix + "SB.marginal.umi.ct.tsv").c_str());
-    sbOut << "X\tY\tnTotal\tnGenome\tnUniqGenome\tnUniqIntergenic\tnUniqExonic\tnUniqIntronic\n";
+    sbOut << "#X\tY\tnTotal\tnGenome\tnUniqGenome\tnUniqIntergenic\tnUniqExonic\tnUniqIntronic\n";
     for (auto& kv : sbCounts) {
         sbOut << (kv.first >> 32) << "\t" << (kv.first & 0xFFFFFFFF) << "\t";
         for (int jj = 0; jj < 6; jj++) {

@@ -308,7 +308,7 @@ Parameters::Parameters() {//initalize parameters info
     parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBstart", &ubS));
     parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "CBlen", &cbL));
     parArray.push_back(new ParameterInfoScalar <int32>   (-1, -1, "UBlen", &ubL));
-    parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "cbWhitelist", &cbWhitelist));
+    parArray.push_back(new ParameterInfoVector <string> (-1, -1, "cbWhitelist", &cbWhitelist));
     parArray.push_back(new ParameterInfoScalar <string> (-1, -1, "crdTag", &crdTag));
     parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "cbExact", &cbExact));
     parArray.push_back(new ParameterInfoScalar <bool> (-1, -1, "skipCBifExact", &skipCBifExact));
@@ -793,7 +793,7 @@ void Parameters::inputParameters (int argInN, char* argIn[]) {//input parameters
     // White list handler // 2024UM
     cbErrorCorrection = false;
     cbAnnotation = false;
-    if (cbWhitelist != "None") {
+    if (cbWhitelist.size() > 0) {
         if (crdTag.size() != 2 || !(cbS >= 0 && cbL > 0)) {
             exitWithError("EXITING because of FATAL ERROR: crdTag must contain exactly two characters (" + crdTag + ")\n", std::cerr, inOut->logMain, EXIT_CODE_PARAMETER, *this);
         }

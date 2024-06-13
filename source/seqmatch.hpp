@@ -86,7 +86,7 @@ int32_t BcdMatch<T>::add_ref(const char* seq, T& val) {
         return 0;
     }
     // Assume reference barcodes are unique
-    if (allow_ambig_ref && nonACGTs.size() <= max_ambig) {
+    if (allow_ambig_ref && (int32_t) nonACGTs.size() <= max_ambig) {
         uint16_t abase = ((uint16_t) nonACGTs[0] << 8) | seq[nonACGTs[0]];
         ambig_temp.emplace(bcd, std::make_pair(abase, val));
         return nonACGTs.size();
@@ -190,7 +190,7 @@ int32_t BcdMatch<T>::query(const char* seq, uint64_t& cb, T& val, int32_t max_mi
     }
     std::vector<uint8_t> nonACGTs;
     uint64_t bcd = seq2bits2(seq, bcd_len, nonACGTs);
-    if ((nonACGTs.size() > 0 && !allow_ambig_query) || (nonACGTs.size() > max_ambig)) {
+    if ((nonACGTs.size() > 0 && !allow_ambig_query) || ((int32_t) nonACGTs.size() > max_ambig)) {
         return -1;
     }
     if (nonACGTs.size() == 0) {
